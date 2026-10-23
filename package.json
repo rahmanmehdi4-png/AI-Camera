@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 8080 --strictPort",
     "typecheck": "tsc --project tsconfig.app-v2.json --noEmit",
-    "test": "node --experimental-strip-types --test src/planner/core.test.ts src/planner/v2.test.ts",
+    "test": "node --experimental-strip-types --test src/planner/core.test.ts src/planner/v2.test.ts src/planner/adult-presets.test.ts",
     "build": "npm run typecheck && npm test && vite build && node scripts/emit-offline-v2.mjs && node scripts/verify-static-v2.mjs dist",
     "preview": "vite preview --host 0.0.0.0 --port 4173"
   },

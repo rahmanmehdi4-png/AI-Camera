@@ -54,7 +54,7 @@ import {
   toSceneProp,
 } from "@/planner/project";
 import { PROP_LIBRARY, type PropKind } from "@/planner/props";
-import { GROUP_PRESETS } from "@/planner/group-presets";
+import { ADULT_GROUP_PRESETS, GROUP_PRESETS } from "@/planner/group-presets";
 import { deleteStoredProject, listProjects, loadLastProject, saveProject, type StoredProject } from "@/planner/storage";
 import { JOINT_GROUPS, JOINT_LABEL, PRESET_LABEL, type JointId, type PresetId } from "@/planner/skeleton";
 import { blobBytes, buildZip, downloadBlob } from "@/planner/zip";
@@ -101,6 +101,7 @@ export function PlannerApp() {
   const [query, setQuery] = useState("");
   const [poseSearch, setPoseSearch] = useState("");
   const [poseCount, setPoseCount] = useState(2);
+  const [showAdultPresets, setShowAdultPresets] = useState(false);
   const [customLayouts, setCustomLayouts] = useState<{name:string; members:ReturnType<typeof usePlanner.getState>["project"]["characters"]}[]>(() => {
     try { return JSON.parse(localStorage.getItem("camera-planner:v2:custom-poses") || "[]"); } catch { return []; }
   });
@@ -345,6 +346,27 @@ export function PlannerApp() {
           <button key={preset.id} type="button" className="btn h-auto flex-col items-start text-left" title={preset.description} onClick={() => { store.applyGroup(preset); store.setControlMode("character"); }}><span className="text-xs font-semibold">{preset.name}</span><span className="text-[11px] text-muted">{preset.description}</span></button>
         ))}
       </div>
+      <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs text-muted">
+        <input type="checkbox" checked={showAdultPresets} onChange={(e) => setShowAdultPresets(e.target.checked)} aria-label="Show adult pose presets" />
+        Show 18+ / NSFW positions (non-graphic mannequins)
+      </label>
+      {showAdultPresets ? (
+        <div className="mt-2 rounded-lg border border-border p-2">
+          <h4 className="mb-1 text-sm font-semibold">Adult / NSFW positions</h4>
+          {poseCount !== 2 ? (
+            <p className="text-xs text-muted">Select 2 people to see adult position presets.</p>
+          ) : (
+            <div className="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto">
+              {ADULT_GROUP_PRESETS.filter((preset) => preset.name.toLowerCase().includes(poseSearch.toLowerCase())).map((preset) => (
+                <button key={preset.id} type="button" className="btn h-auto flex-col items-start text-left" title={preset.description} onClick={() => { store.applyGroup(preset); store.setControlMode("character"); }}>
+                  <span className="text-xs font-semibold">{preset.name}</span>
+                  <span className="text-[11px] text-muted">{preset.description}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
     </section>
   );
 
