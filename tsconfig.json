@@ -1,36 +1,19 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "jsx": "react-jsx",
-    "strict": true,
-    "isolatedModules": true,
-    "skipLibCheck": true,
-    // `src/lib/db.ts` imports scripts/migration-plan.mjs; checkJs types the
-    // implementation itself instead of a hand-written declaration beside it.
-    "allowJs": true,
-    "checkJs": true,
-    "noEmit": true,
-    "types": [
-      "vite/client",
-      "node"
-    ],
-    "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    },
-    "allowImportingTsExtensions": true
-  },
+  "extends": "./tsconfig.app-v2.json",
   "include": [
-    "src",
-    "server"
+    "src/main-v2.tsx",
+    "src/components/planner/**/*",
+    "src/planner/**/*",
+    "src/state/**/*",
+    "src/three/**/*"
+  ],
+  "exclude": [
+    "src/lib",
+    "src/routes",
+    "src/router.tsx",
+    "src/components/preview-host-bridge.tsx",
+    "server",
+    "migrations",
+    "scripts"
   ]
 }
