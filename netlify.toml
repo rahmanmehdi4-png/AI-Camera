@@ -1,0 +1,11 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Netlify installs with NODE_ENV=production. Keep dev tools available either way:
+  # the Vite/TypeScript toolchain also lives in dependencies, and this flag
+  # forces npm to install every package listed in the lockfile.
+  NPM_CONFIG_PRODUCTION = "false"
+  NPM_FLAGS = "--include=dev --no-audit --no-fund"
