@@ -8,10 +8,16 @@ import { lowestBodyY } from "./body.ts";
 test("solo posing references are distinct from standard and paired-adult presets", () => {
   assert.equal(GROUP_PRESETS.length, 112);
   assert.equal(ADULT_GROUP_PRESETS.length, 12);
-  assert.equal(SOLO_ADULT_PRESETS.length, 43);
+  assert.equal(SOLO_ADULT_PRESETS.length, 73);
   const ids = SOLO_ADULT_PRESETS.map(p => p.id);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(new Set(SOLO_ADULT_PRESETS.map(p => p.name)).size, ids.length);
+  assert.ok(SOLO_ADULT_PRESETS.every(p => p.name.startsWith("JOI — ")), "Each reference must be clearly labelled JOI");
+  const signatures = SOLO_ADULT_PRESETS.map(p => {
+    const m = p.members[0]!;
+    return JSON.stringify([m.pose, Object.entries(m.joints ?? {}).sort(([a], [b]) => a.localeCompare(b))]);
+  });
+  assert.equal(new Set(signatures).size, ids.length, "Duplicate joint configurations found");
   for (const p of SOLO_ADULT_PRESETS) {
     assert.equal(p.count, 1);
     assert.equal(p.members.length, 1);

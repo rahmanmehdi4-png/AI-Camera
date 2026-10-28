@@ -367,8 +367,8 @@ export function PlannerApp() {
             </div>
           )}
           <div className="mt-3 border-t border-border pt-3">
-            <h5 className="mb-1 text-sm font-semibold">Solo / JOI posing references ({SOLO_ADULT_PRESETS.length})</h5>
-            <p className="mb-2 text-xs text-muted">Non-graphic single-person poses. Applies to the selected character only; other people, objects and camera settings remain unchanged.</p>
+            <h5 className="mb-1 text-sm font-semibold">Solo / JOI positions ({SOLO_ADULT_PRESETS.length})</h5>
+            <p className="mb-2 text-xs text-muted">Clearly labelled JOI mannequin references; non-graphic and fully editable. Only the selected character changes.</p>
             <div className="grid max-h-56 grid-cols-2 gap-2 overflow-y-auto">
               {SOLO_ADULT_PRESETS.filter((preset) => preset.name.toLowerCase().includes(poseSearch.toLowerCase())).map((preset) => (
                 <button key={preset.id} type="button" className="btn h-auto flex-col items-start text-left" title={preset.description} onClick={() => {
