@@ -1,6 +1,7 @@
 /** Non-graphic multi-person blocking presets; adult references use featureless mannequins. */
 import { applyPreset, createCharacter, nextCharacterName, type Project } from "./project.ts";
 import { clampPose, lowestJointDelta, worldJoints, type Pose, type PresetId } from "./skeleton.ts";
+import { placeBodyOnFloor } from "./body.ts";
 
 export type GroupMember = {
   pose: PresetId;
@@ -127,6 +128,76 @@ export const ADULT_GROUP_PRESETS: GroupPreset[] = [
     { ...p("stand", 0, 0.31, 180), joints: { upperArmL: j(-32, 0, 15), upperArmR: j(-32, 0, -15), forearmL: j(-35, 0, 0), forearmR: j(-35, 0, 0) } },
   ]),
 ];
+
+
+/** Optional solo/JOI posing references: non-graphic, single mannequin, no animation. */
+const solo = (id: string, name: string, base: PresetId, description: string, joints: Partial<Pose>): GroupPreset => ({
+  id: `solo-${id}`, name, description, category: "adult", count: 1,
+  members: [{ pose: base, x: 0, z: 0, yaw: 0, joints }],
+});
+
+/** 18+ solo posing library; presets affect only the selected character. */
+export const SOLO_ADULT_PRESETS: GroupPreset[] = [
+  solo("front-facing-neutral", "Front-Facing Upright", "stand", "Standing upright with head turned toward the camera", { head: j(-6, 0, 0), upperArmL: j(-18, 0, 8), upperArmR: j(-18, 0, -8) }),
+  solo("standing-hip-shift", "Standing Hip Shift", "stand", "Weight shifted to one hip", { hips: j(0, 0, 15), spine: j(0, 0, -10), thighL: j(-10, 0, 0), upperArmR: j(0, 0, -30) }),
+  solo("standing-hand-waist", "Standing Hand at Waist", "stand", "One arm folded toward the waist", { upperArmL: j(-25, 0, 62), forearmL: j(-85, 0, 0), handL: j(15, 0, 0), hips: j(0, 0, 8) }),
+  solo("standing-hands-waist", "Standing Hands at Waist", "stand", "Both elbows angled outward with hands near the waist", { upperArmL: j(-32, 0, 65), upperArmR: j(-32, 0, -65), forearmL: j(-75, 0, 0), forearmR: j(-75, 0, 0) }),
+  solo("standing-head-tilt", "Standing Head Tilt", "stand", "Standing with a distinct head tilt", { head: j(-10, 15, 22), neck: j(-5, 5, 9), hips: j(0, 0, -8) }),
+  solo("standing-hands-head", "Standing Hands Behind Head", "stand", "Both hands lifted around the head", { upperArmL: j(-90, 0, 105), upperArmR: j(-90, 0, -105), forearmL: j(-95, 0, 0), forearmR: j(-95, 0, 0) }),
+  solo("standing-overhead-reach", "Standing One Arm Raised", "stand", "One arm lifted overhead", { upperArmL: j(-165, 0, 20), forearmL: j(-12, 0, 0), head: j(-8, 0, 0) }),
+  solo("standing-torso-twist", "Standing Torso Twist", "stand", "Torso and head turned in different directions", { hips: j(0, 16, 0), spine: j(0, -30, 10), chest: j(0, -16, 0), head: j(-3, 35, 0) }),
+  solo("standing-one-knee", "Standing One Knee Lift", "stand", "One leg lifted while remaining upright", { thighL: j(-65, 0, 12), shinL: j(95, 0, 0), upperArmR: j(-25, 0, -30) }),
+  solo("standing-lean-forward", "Standing Forward Lean", "lean", "Torso leaning toward the camera", { hips: j(32, 0, 0), spine: j(22, 0, 0), upperArmL: j(-44, 0, 12), upperArmR: j(-44, 0, -12) }),
+  solo("seated-forward", "Seated Forward Gaze", "sit", "Seated upright with gaze directed forward", { spine: j(15, 0, 0), chest: j(8, 0, 0), head: j(-16, 0, 0) }),
+  solo("seated-lean-back", "Seated Lean Back", "sit", "Seated with torso leaning backward", { spine: j(-18, 0, 0), chest: j(-15, 0, 0), upperArmL: j(20, 0, 40), upperArmR: j(20, 0, -40) }),
+  solo("seated-one-knee-raised", "Seated One Knee Raised", "sit", "One knee pulled higher than the other", { thighL: j(-62, 0, -5), shinL: j(115, 0, 0), thighR: j(-88, 0, 0), upperArmL: j(-50, 0, 20) }),
+  solo("seated-wide-knees", "Seated Wide-Knee Pose", "sit", "Seated with knees angled outward", { thighL: j(-82, 20, 25), thighR: j(-82, -20, -25), upperArmL: j(-40, 0, 35), upperArmR: j(-40, 0, -35) }),
+  solo("seated-cross-leg", "Seated Angled Legs", "sit", "Legs offset diagonally while seated", { thighL: j(-82, 18, -14), thighR: j(-80, -15, 14), shinL: j(95, 0, 0), shinR: j(104, 0, 0) }),
+  solo("seated-hand-thigh", "Seated Hand on Thigh", "sit", "One arm resting toward the thigh", { upperArmL: j(-50, 0, 22), forearmL: j(-50, 0, 0), handL: j(25, 0, -10), head: j(-8, 0, 0) }),
+  solo("seated-hands-thighs", "Seated Hands on Thighs", "sit", "Both forearms angled toward the legs", { upperArmL: j(-55, 0, 25), upperArmR: j(-55, 0, -25), forearmL: j(-42, 0, 0), forearmR: j(-42, 0, 0) }),
+  solo("seated-side-twist", "Seated Side Twist", "sit", "Seated with a twisted torso and turned head", { hips: j(0, 8, 0), spine: j(0, 30, 0), chest: j(0, 17, 0), head: j(0, -24, 0) }),
+  solo("seated-hand-chest", "Seated Hand at Chest", "sit", "One hand drawn toward the upper torso", { upperArmR: j(-65, 0, -46), forearmR: j(-92, 0, 0), handR: j(-15, 0, 0), head: j(-8, -10, 0) }),
+  solo("seated-one-arm-up", "Seated One Arm Overhead", "sit", "Seated with one raised arm", { upperArmL: j(-156, 0, 20), forearmL: j(-35, 0, 0), head: j(-8, 0, 0) }),
+  solo("seated-head-back", "Seated Head Back", "sit", "Seated with gaze lifted upward", { neck: j(-20, 0, 0), head: j(-23, 0, 0), chest: j(-12, 0, 0) }),
+  solo("seated-legs-forward", "Seated Legs Extended", "sit", "Both lower legs stretched forward", { thighL: j(-88, 3, 0), thighR: j(-88, -3, 0), shinL: j(20, 0, 0), shinR: j(20, 0, 0) }),
+  solo("kneeling-upright", "Kneeling Upright", "kneel", "Kneeling with straightened torso", { spine: j(-5, 0, 0), chest: j(0, 0, 0), head: j(-5, 0, 0) }),
+  solo("kneeling-lean-back", "Kneeling Lean Back", "kneel", "Kneeling with torso angled backward", { spine: j(-25, 0, 0), chest: j(-17, 0, 0), head: j(6, 0, 0), upperArmL: j(20, 0, 12) }),
+  solo("kneeling-forward", "Kneeling Forward Lean", "kneel", "Kneeling and leaning forward", { hips: j(22, 0, 0), spine: j(32, 0, 0), chest: j(14, 0, 0), upperArmL: j(-72, 0, 20), upperArmR: j(-72, 0, -20) }),
+  solo("kneeling-one-arm-up", "Kneeling One Arm Raised", "kneel", "One arm elevated while kneeling", { upperArmR: j(-152, 0, -22), forearmR: j(-25, 0, 0), head: j(-8, 0, 5) }),
+  solo("kneeling-hands-thighs", "Kneeling Hands on Thighs", "kneel", "Both arms directed toward the thighs", { upperArmL: j(-45, 0, 22), upperArmR: j(-45, 0, -22), forearmL: j(-50, 0, 0), forearmR: j(-50, 0, 0) }),
+  solo("kneeling-side-turn", "Kneeling Side Turn", "kneel", "Kneeling with torso and head turned sideways", { spine: j(0, -22, 10), chest: j(0, -16, 0), head: j(-8, 30, 5), upperArmL: j(-35, 0, 35) }),
+  solo("reclined-one-knee", "Reclined One Knee Raised", "lie-up", "Lying back with one knee lifted", { thighL: j(-58, 0, 4), shinL: j(98, 0, 0), upperArmR: j(-15, 0, -16) }),
+  solo("reclined-both-knees", "Reclined Both Knees Raised", "lie-up", "Lying back with both knees bent upward", { thighL: j(-58, 4, 12), thighR: j(-58, -4, -12), shinL: j(100, 0, 0), shinR: j(100, 0, 0) }),
+  solo("reclined-one-arm-high", "Reclined Arm Overhead", "lie-up", "Lying back with one arm extended overhead", { upperArmL: j(-160, 0, 20), forearmL: j(-25, 0, 0), head: j(-5, 0, 0) }),
+  solo("reclined-hands-head", "Reclined Hands Behind Head", "lie-up", "Both arms bent near the head while reclined", { upperArmL: j(-112, 0, 80), upperArmR: j(-112, 0, -80), forearmL: j(-85, 0, 0), forearmR: j(-85, 0, 0) }),
+  solo("reclined-arm-chest", "Reclined Hand at Chest", "lie-up", "One forearm resting across the upper torso", { upperArmL: j(-65, 0, 48), forearmL: j(-75, 0, 0), handL: j(-18, 0, 0) }),
+  solo("reclined-head-turn", "Reclined Head Turn", "lie-up", "Head angled sideways while reclining", { head: j(-5, 34, 0), neck: j(0, 18, 0), upperArmR: j(-20, 0, -35) }),
+  solo("reclined-leg-open", "Reclined Angled Legs", "lie-up", "Legs arranged at differing angles", { thighL: j(-30, 18, 20), thighR: j(-40, -18, -20), shinL: j(65, 0, 0), shinR: j(80, 0, 0) }),
+  solo("reclined-arm-reach", "Reclined Forward Reach", "lie-up", "One arm reaching forward in a reclining pose", { upperArmR: j(-112, 0, -20), forearmR: j(-40, 0, 0), head: j(10, 0, 0) }),
+  solo("side-lying-head-rest", "Side-Lying Head Rest", "lie-left", "Side-lying with hand near the head", { upperArmL: j(-48, 0, -28), forearmL: j(-94, 0, 0), head: j(0, 12, 0) }),
+  solo("side-lying-one-knee", "Side-Lying One Knee Bent", "lie-left", "Side-lying with one knee drawn upward", { thighL: j(-85, 0, 0), thighR: j(-22, 0, 0), shinL: j(105, 0, 0) }),
+  solo("side-lying-gaze-camera", "Side-Lying Camera Gaze", "lie-right", "Side-lying with face turned toward the viewer", { head: j(0, -40, 0), neck: j(0, -22, 0), upperArmL: j(-28, 0, -10) }),
+  solo("side-lying-over-shoulder", "Side-Lying Over-Shoulder Look", "lie-right", "Side-lying with a strong over-shoulder look", { chest: j(0, 20, 0), neck: j(0, 30, 0), head: j(0, 25, 0) }),
+  solo("side-lying-arm-reach", "Side-Lying Arm Reach", "lie-left", "Side-lying with one arm extended", { upperArmR: j(-118, 0, -25), forearmR: j(-42, 0, 0), head: j(-6, 0, 0) }),
+  solo("face-down-head-side", "Face-Down Head Turn", "lie-down", "Lying face down with head turned to one side", { head: j(-16, 30, 0), neck: j(0, 20, 0), upperArmL: j(-35, 0, 30) }),
+  solo("face-down-one-knee", "Face-Down One Knee Bent", "lie-down", "Lying face down with one knee bent", { thighR: j(-22, 0, -5), shinR: j(108, 0, 0), upperArmR: j(-55, 0, -30) }),
+];
+
+/** Does not create, remove or move other characters; camera and props stay intact. */
+export function applySoloAdultPreset(project: Project, preset: GroupPreset, selectedId: string): void {
+  if (preset.count !== 1 || preset.category !== "adult" || !preset.id.startsWith("solo-")) return;
+  const character = project.characters.find((item) => item.id === selectedId);
+  const member = preset.members[0];
+  if (!character || !member) return;
+  applyPreset(character, member.pose, true);
+  if (member.joints) {
+    character.pose = character.jointLimits
+      ? clampPose({ ...character.pose, ...member.joints }, true)
+      : { ...character.pose, ...member.joints };
+    // The model's sculpted surfaces, not merely the joint points, must clear the floor.
+    placeBodyOnFloor(character);
+  }
+}
 
 export function applyGroupPreset(project: Project, preset: GroupPreset): void {
   // Keep extra characters already in the project; the user controls deleting them.

@@ -55,7 +55,7 @@ import {
   toSceneProp,
 } from "@/planner/project";
 import { PROP_LIBRARY, type PropKind } from "@/planner/props";
-import { ADULT_GROUP_PRESETS, GROUP_PRESETS } from "@/planner/group-presets";
+import { ADULT_GROUP_PRESETS, SOLO_ADULT_PRESETS, GROUP_PRESETS, applySoloAdultPreset } from "@/planner/group-presets";
 import { deleteStoredProject, listProjects, loadLastProject, saveProject, type StoredProject } from "@/planner/storage";
 import { JOINT_GROUPS, JOINT_LABEL, PRESET_LABEL, type JointId, type PresetId } from "@/planner/skeleton";
 import { blobBytes, buildZip, downloadBlob } from "@/planner/zip";
@@ -366,6 +366,22 @@ export function PlannerApp() {
               ))}
             </div>
           )}
+          <div className="mt-3 border-t border-border pt-3">
+            <h5 className="mb-1 text-sm font-semibold">Solo / JOI posing references ({SOLO_ADULT_PRESETS.length})</h5>
+            <p className="mb-2 text-xs text-muted">Non-graphic single-person poses. Applies to the selected character only; other people, objects and camera settings remain unchanged.</p>
+            <div className="grid max-h-56 grid-cols-2 gap-2 overflow-y-auto">
+              {SOLO_ADULT_PRESETS.filter((preset) => preset.name.toLowerCase().includes(poseSearch.toLowerCase())).map((preset) => (
+                <button key={preset.id} type="button" className="btn h-auto flex-col items-start text-left" title={preset.description} onClick={() => {
+                  if (!selectedCharacter) return;
+                  store.commit((draft) => applySoloAdultPreset(draft, preset, selectedCharacter.id));
+                  store.setControlMode("character");
+                }}>
+                  <span className="text-xs font-semibold">{preset.name}</span>
+                  <span className="text-[11px] text-muted">{preset.description}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       ) : null}
     </section>
