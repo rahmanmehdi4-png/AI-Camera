@@ -9,7 +9,7 @@ createRoot(root).render(<PlannerApp />);
 // are blocked (e.g. in a private browsing session).
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((error) => {
+    void navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" }).catch((error) => {
       console.warn("Offline cache unavailable:", error);
     });
   });

@@ -46,3 +46,11 @@ assert.ok(sw.includes('/assets/'),'Service worker does not cache the application
 assert.ok(read('_redirects').includes('/index.html'),'Missing static SPA fallback');
 assert.ok(!existsSync(path('__grok')),'Preview-template assets leaked into the release');
 console.log('V2 package verified: '+files.length+' web assets; manifest, cache, icons and referenced files OK.');
+
+const release=JSON.parse(read('release.json'));
+assert.equal(release.renderer,'sculpted-2.1');
+assert.equal(release.entry,'src/main-v2.tsx');
+assert.ok(release.node.startsWith('v22.'),'Production release must use Node 22');
+const bundle=files.filter(f=>f.endsWith('.js')).map(read).join('\n');
+assert.ok(bundle.includes('sculpted-2.1'),'Obsolete mannequin renderer in output');
+assert.ok(bundle.includes('surface-'),'Body surfaces missing from output');

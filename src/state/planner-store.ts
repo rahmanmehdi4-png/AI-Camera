@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { placeBodyOnFloor } from "@/planner/body";
 import type { CameraState } from "@/planner/camera";
 import type { MotionClip, MotionKind } from "@/planner/motion";
 import { sanitizeMotion } from "@/planner/motion";
@@ -19,7 +20,7 @@ import {
 import type { PropKind } from "@/planner/props";
 import { applyGroupPreset, type GroupPreset } from "@/planner/group-presets";
 import { propSpec } from "@/planner/props";
-import { clampPose, clampJoint, lowestJointDelta, worldJoints, type JointId, type PresetId } from "@/planner/skeleton";
+import { clampPose, clampJoint, type JointId, type PresetId } from "@/planner/skeleton";
 import type { EulerDeg, Vec3 } from "@/planner/math";
 
 export type Tool = "move" | "rotate" | "scale" | "pose";
@@ -330,14 +331,7 @@ export const usePlanner = create<PlannerState>((set, get) => ({
       return edit(state, (project) => {
         const character = project.characters.find((item) => item.id === id);
         if (!character) return;
-        const points = Object.values(
-          worldJoints(character.pose, character.position, character.rotation, character.scale),
-        );
-        character.position = {
-          x: character.position.x,
-          y: character.position.y + lowestJointDelta(points),
-          z: character.position.z,
-        };
+        placeBodyOnFloor(character);
       }, true);
     }),
   patchCharacter: (id, patch, history = true) =>

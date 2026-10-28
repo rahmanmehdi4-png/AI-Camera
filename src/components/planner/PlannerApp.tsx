@@ -1,3 +1,4 @@
+import { uid } from "@/planner/project";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Camera,
@@ -337,7 +338,7 @@ export function PlannerApp() {
       }}>+ Save current arrangement</button>
       {customLayouts.length ? <details className="mb-2 rounded-lg border border-border p-2"><summary className="text-sm">My saved arrangements ({customLayouts.length})</summary><div className="mt-2 flex max-h-44 flex-col gap-2 overflow-auto">{customLayouts.map((saved, index) => <div className="flex gap-1" key={index}><button className="btn flex-1 justify-start" type="button" onClick={() => store.commit((draft) => {
         // Apply the saved arrangement as a new set of actors, keeping furniture and camera.
-        draft.characters = saved.members.map((member) => ({...structuredClone(member), id: crypto.randomUUID()}));
+        draft.characters = saved.members.map((member) => ({...structuredClone(member), id: uid()}));
       })}>{saved.name} ({saved.members.length})</button><button className="btn" aria-label={`Remove saved preset ${saved.name}`} onClick={() => {
         const next = customLayouts.filter((_, i) => i !== index); localStorage.setItem("camera-planner:v2:custom-poses", JSON.stringify(next)); setCustomLayouts(next);
       }}>×</button></div>)}</div></details> : null}
@@ -472,7 +473,7 @@ export function PlannerApp() {
         <div className="hidden size-8 items-center justify-center rounded-lg bg-primary text-primary-fg sm:flex">
           <Camera className="size-4" />
         </div>
-        <span className="shrink-0 rounded-md border border-accent/50 bg-accent/10 px-2 py-1 text-[10px] font-semibold tracking-wider text-accent" aria-label="Application version 2">V2</span>
+        <span className="shrink-0 rounded-md border border-accent/50 bg-accent/10 px-2 py-1 text-[10px] font-semibold tracking-wider text-accent" aria-label="Application version 2.1">V2.1</span>
         <div className="min-w-0 flex-1">
           <input
             className="field font-medium"

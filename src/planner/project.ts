@@ -19,13 +19,14 @@ import { propAabb, propSpec, surfaceY, type PropKind } from "./props.ts";
 import {
   clampPose,
   emptyPose,
-  lowestJointDelta,
   presetPose,
   worldJoints,
   type JointId,
   type Pose,
   type PresetId,
 } from "./skeleton.ts";
+
+import { placeBodyOnFloor } from "./body.ts";
 
 export const PROJECT_VERSION = 1;
 
@@ -67,7 +68,13 @@ export type Project = {
 };
 
 export function uid(): string {
-  return crypto.randomUUID();
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  // randomUUID is secure-context-only; local HTTP previews still expose getRandomValues.
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6]! & 0x0f) | 0x40;
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  const hex = Array.from(bytes, n => n.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
 }
 
 export function createCharacter(partial?: Partial<Character>): Character {
@@ -162,10 +169,7 @@ export function applyPreset(character: Character, preset: PresetId, snap: boolea
   character.pose = character.jointLimits ? clampPose(next.pose, true) : next.pose;
   character.rotation = eulerXYZFromMatrix(mulMat(rotY(yaw), eulerXYZMatrix(next.rotation)));
   if (snap || preset.startsWith("lie") || preset === "kneel") {
-    const points = Object.values(
-      worldJoints(character.pose, character.position, character.rotation, character.scale),
-    );
-    character.position = add(character.position, v(0, lowestJointDelta(points), 0));
+    placeBodyOnFloor(character);
   }
   if (preset === "stand") character.poseLabel = "standing";
   else if (preset === "sit") character.poseLabel = "sitting";
@@ -187,13 +191,14 @@ export function placeOnProp(character: Character, prop: Prop, mode: "sit" | "lie
   if (mode === "sit") {
     character.rotation = { x: 0, y: prop.rotation.y, z: 0 };
     const hipY = 0.96 * character.scale.y;
-    character.position = v(prop.position.x, surface + 0.05 - hipY, prop.position.z);
+    character.position = v(prop.position.x, surface + 0.115 * character.scale.y + 0.003 - hipY, prop.position.z);
   } else {
     const pitch = mode === "lie-down" ? rotX(90) : mode === "lie-side" ? rotZ(90) : rotX(-90);
     character.rotation = eulerXYZFromMatrix(mulMat(rotY(prop.rotation.y), pitch));
     const hip = worldJoints(character.pose, v(0, 0, 0), character.rotation, character.scale).hips;
     const target = v(prop.position.x, surface + 0.12, prop.position.z);
     character.position = sub(target, hip);
+    placeBodyOnFloor(character, surface);
   }
   character.poseLabel =
     mode === "sit"

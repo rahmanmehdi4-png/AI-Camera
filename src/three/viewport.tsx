@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { JointId } from "@/planner/skeleton";
 import { usePlanner, type Selection } from "@/state/planner-store";
 import { Stage, type StageHooks } from "./stage";
@@ -11,6 +11,7 @@ export type ViewportHandle = {
 };
 
 export const Viewport = forwardRef<ViewportHandle>(function Viewport(_, ref) {
+  const [renderError, setRenderError] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<Stage | null>(null);
   const hooks = usePlanner();
@@ -60,6 +61,7 @@ export const Viewport = forwardRef<ViewportHandle>(function Viewport(_, ref) {
     try {
       stage = new Stage(canvas, api, quality);
     } catch (error) {
+      setRenderError(true);
       hooksRef.current.setStatus(error instanceof Error ? error.message : "WebGL failed to start.");
       return;
     }
@@ -70,5 +72,13 @@ export const Viewport = forwardRef<ViewportHandle>(function Viewport(_, ref) {
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="stage-canvas h-full w-full" aria-label="3D stage" />;
+  return <>
+    <canvas ref={canvasRef} className="stage-canvas h-full w-full" aria-label="3D stage" />
+    {renderError && <div className="absolute inset-0 flex items-center justify-center p-6 pointer-events-none" role="alert">
+      <div className="max-w-sm rounded-xl border border-border bg-surface p-5 text-center">
+        <p className="font-semibold">3D rendering is unavailable</p>
+        <p className="mt-2 text-sm text-muted">This browser could not start WebGL. Open the planner in a browser with graphics acceleration enabled. Your project controls and saved shots remain available.</p>
+      </div>
+    </div>}
+  </>;
 });

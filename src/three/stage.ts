@@ -6,6 +6,7 @@ import type { Project } from "@/planner/project";
 import { worldJoints, type JointId } from "@/planner/skeleton";
 import type { ControlMode, Selection, Tool, ViewMode } from "@/state/planner-store";
 import { Mannequin } from "./mannequin";
+import { MANNEQUIN_REVISION } from "@/planner/body";
 import { PropMesh } from "./prop-mesh";
 
 export type StageHooks = {
@@ -88,6 +89,7 @@ export class Stage {
     quality: "low" | "high",
   ) {
     this.quality = quality;
+    this.canvas.dataset.mannequinRenderer = MANNEQUIN_REVISION;
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: quality === "high",

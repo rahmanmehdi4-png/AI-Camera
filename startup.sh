@@ -3,9 +3,9 @@
 if curl -sf -o /dev/null --max-time 1 http://127.0.0.1:8080/; then
   exit 0
 fi
-cd /workspace/camera-v2 || exit 1
+cd "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)" || exit 1
 if [ ! -d node_modules/vite ]; then
-  npm install --no-audit --no-fund
+  npm ci --ignore-scripts --no-audit --no-fund
 fi
 npm run dev >/tmp/camera-v2-dev.log 2>&1 &
 i=0

@@ -1,13 +1,13 @@
 {
   "name": "camera-pose-planner",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 8080 --strictPort",
     "typecheck": "tsc --project tsconfig.app-v2.json --noEmit",
-    "test": "node --experimental-strip-types --test src/planner/core.test.ts src/planner/v2.test.ts src/planner/adult-presets.test.ts",
-    "build": "npm run typecheck && npm test && vite build && node scripts/emit-offline-v2.mjs && node scripts/verify-static-v2.mjs dist",
+    "test": "node --experimental-strip-types --test src/planner/core.test.ts src/planner/v2.test.ts src/planner/adult-presets.test.ts src/three/mannequin.test.ts",
+    "build": "npm run typecheck && npm test && vite build && node scripts/release-manifest.mjs && node scripts/emit-offline-v2.mjs && node scripts/verify-static-v2.mjs dist && node scripts/verify-offline-v2.mjs",
     "preview": "vite preview --host 0.0.0.0 --port 4173"
   },
   "dependencies": {
@@ -27,5 +27,8 @@
     "typescript": "^5.7.0",
     "vite": "^8.2.0",
     "zustand": "^5.0.0"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }

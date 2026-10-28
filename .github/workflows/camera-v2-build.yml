@@ -1,0 +1,31 @@
+name: Build and verify Camera Planner V2
+on:
+  push:
+    branches: [main, cloudflare-v2, v2-release-candidate]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Reject external Git submodules
+        run: |
+          if git ls-files --stage | grep -q '^160000 '; then exit 1; fi
+          test ! -f .gitmodules
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run build
+      - name: Package compiled website at archive root
+        run: cd dist && zip -qr ../Camera-Pose-Planner-V2.1-Website.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: camera-pose-planner-v2-website
+          path: Camera-Pose-Planner-V2.1-Website.zip
+          retention-days: 30
