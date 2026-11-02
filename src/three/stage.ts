@@ -16,6 +16,8 @@ export type StageHooks = {
   getTool: () => Tool;
   getControlMode: () => ControlMode;
   getPathAxis: () => "horizontal" | "vertical";
+  getActiveWaypoint: () => { clipId: string; index: number } | null;
+  selectWaypoint: (clipId: string, index: number) => void;
   updateWaypoint: (clipId: string, index: number, offset: Vec3) => void;
   getView: () => ViewMode;
   getTime: () => number;
@@ -58,7 +60,7 @@ export class Stage {
   private readonly arrows: THREE.Mesh[] = [];
   private readonly waypointHandles = new THREE.Group();
   private readonly waypointMeshes: THREE.Mesh[] = [];
-  private readonly waypointGeometry = new THREE.SphereGeometry(0.16, 14, 10);
+  private readonly waypointGeometry = new THREE.SphereGeometry(0.23, 14, 10);
   private readonly waypointMaterial = new THREE.MeshBasicMaterial({ color: 0xe39a4d, depthTest: false });
   private readonly camHelper = new THREE.Group();
   private readonly frustumCam = new THREE.PerspectiveCamera(36, 16 / 9, 0.15, 3);
@@ -427,7 +429,7 @@ export class Stage {
     waypoints.forEach((point, index) => {
       let marker = this.waypointMeshes[index];
       if (!marker) {
-        marker = new THREE.Mesh(this.waypointGeometry, this.waypointMaterial);
+        marker = new THREE.Mesh(this.waypointGeometry, this.waypointMaterial.clone());
         marker.renderOrder = 100;
         this.waypointMeshes[index] = marker;
         this.waypointHandles.add(marker);
@@ -435,7 +437,10 @@ export class Stage {
       const at = activePath!.start + point.t * activePath!.duration;
       const actual = resolveCamera(project.camera, project.motions, at).position;
       marker.position.set(actual.x, actual.y, actual.z);
-      marker.scale.setScalar(THREE.MathUtils.clamp(this.radius * 0.12, 1, 2));
+      const selectedPoint = this.hooks.getActiveWaypoint();
+      const selected = selectedPoint?.clipId === activePath!.id && selectedPoint.index === index;
+      (marker.material as THREE.MeshBasicMaterial).color.set(selected ? 0x6fbfb8 : 0xe39a4d);
+      marker.scale.setScalar(THREE.MathUtils.clamp(this.radius * 0.12, 1, 2) * (selected ? 1.45 : 1));
       marker.userData = { pick: "waypoint", id: activePath!.id, index };
       marker.visible = this.hooks.getControlMode() === "path";
     });
@@ -683,6 +688,7 @@ export class Stage {
         const clip = project.motions.find((m) => m.id === clipId);
         const old = clip?.waypoints?.[index]?.offset;
         if (old) {
+          this.hooks.selectWaypoint(clipId, index);
           this.hooks.begin();
           this.drag = { kind: "waypoint", id: clipId, index, x: event.clientX, y: event.clientY, old: { ...old }, vertical: event.shiftKey || this.hooks.getPathAxis() === "vertical", moved: 0 };
         }

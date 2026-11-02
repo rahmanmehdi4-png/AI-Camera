@@ -39,6 +39,11 @@ export const Viewport = forwardRef<ViewportHandle>(function Viewport(_, ref) {
       getTool: () => hooksRef.current.tool,
       getControlMode: () => hooksRef.current.controlMode,
       getPathAxis: () => hooksRef.current.pathAxis,
+      getActiveWaypoint: () => hooksRef.current.activeWaypoint,
+      selectWaypoint: (clipId, index) => {
+        hooksRef.current.setActiveWaypoint({clipId,index});
+        hooksRef.current.setTime(hooksRef.current.project.motions.find(m=>m.id===clipId)?.start ?? 0);
+      },
       updateWaypoint: (clipId, index, offset) => {
         const clip = hooksRef.current.project.motions.find((m) => m.id === clipId);
         if (!clip?.waypoints) return;

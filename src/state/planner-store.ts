@@ -52,6 +52,8 @@ export type PlannerState = {
   tool: Tool;
   controlMode: ControlMode;
   pathAxis: "horizontal" | "vertical";
+  activeWaypoint: { clipId: string; index: number } | null;
+  setActiveWaypoint: (value: { clipId: string; index: number } | null) => void;
   view: ViewMode;
   past: Snap[];
   future: Snap[];
@@ -128,6 +130,7 @@ export const usePlanner = create<PlannerState>((set, get) => ({
   tool: "move",
   controlMode: "workspace",
   pathAxis: "horizontal",
+  activeWaypoint: null,
   view: "split",
   past: [],
   future: [],
@@ -147,12 +150,14 @@ export const usePlanner = create<PlannerState>((set, get) => ({
       time: 0,
       playing: false,
       status,
+      activeWaypoint: null,
     });
   },
   select: (selection) => set({ selection }),
   setJoint: (joint) => set({ joint, tool: joint ? "pose" : get().tool }),
   setTool: (tool) => set({ tool }),
   setPathAxis: (pathAxis) => set({ pathAxis }),
+  setActiveWaypoint: (activeWaypoint) => set({ activeWaypoint }),
   setControlMode: (controlMode) => set((state) => {
     // Switching modes also selects the object type that this mode manipulates.
     // Without this, Camera mode can accidentally keep nudging a character.

@@ -1143,20 +1143,70 @@ function Timeline({
           {clip.kind === "path" ? (
             <div className="rounded-xl border border-border bg-bg p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold">Custom movement points</h3>
-                <div className="flex gap-2">
-                  <button className="btn" type="button" data-on={store.pathAxis === "vertical"} title="On a touchscreen, this switches point dragging between the floor and height. Shift-drag does the same on a desktop." onClick={() => store.setPathAxis(store.pathAxis === "horizontal" ? "vertical" : "horizontal")}>{store.pathAxis === "vertical" ? "Dragging height" : "Dragging floor"}</button>
-                  <button className="btn" type="button" onClick={() => store.updateClip(clip.id, { waypoints: insertPathWaypoint(clip.waypoints ?? []) })}>+ Add point</button>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold">Camera route points</h3>
+                  <HelpTip text="Tap a numbered point below or its orange marker in the 3D Scene. Use the large directional buttons to move that point, or drag the marker directly. Points mark where the camera travels during the shot." />
                 </div>
+                <button className="btn" type="button" onClick={() => {
+                  const points=insertPathWaypoint(clip.waypoints ?? []);
+                  const previous=new Set((clip.waypoints??[]).map(p=>p.t));
+                  const index=Math.max(0,points.findIndex(p=>!previous.has(p.t)));
+                  store.updateClip(clip.id,{waypoints:points});
+                  store.setActiveWaypoint({clipId:clip.id,index});
+                  store.setControlMode("path");
+                  store.setView("split");
+                }}>+ Add route point</button>
               </div>
-              <p className="my-2 text-xs text-muted">X = sideways, Y = height, Z = forward/back, relative to the original camera. Each point occurs at a percentage of this movement’s duration. For up then down, raise Y in the middle and return it to zero at the end.</p>
-              {(clip.waypoints ?? []).map((point,index) => (
-                <div key={index} className="my-2 grid grid-cols-4 gap-2 rounded-lg bg-surface p-2">
-                  <NumberBox label="Progress %" value={point.t * 100} step={5} onChange={(v)=>store.updateClip(clip.id,{waypoints: clip.waypoints!.map((p,i)=>i===index?{...p,t:Math.max(0,Math.min(100,v))/100}:p)},true)}/>
-                  {(["x","y","z"] as const).map((axis)=><NumberBox key={axis} label={`${axis.toUpperCase()} metres`} value={point.offset[axis]} step={0.1} onChange={(v)=>store.updateClip(clip.id,{waypoints:clip.waypoints!.map((p,i)=>i===index?{...p,offset:{...p.offset,[axis]:v}}:p)},true)}/>)}
-                  {(clip.waypoints ?? []).length > 2 ? <button className="btn col-span-4" type="button" onClick={()=>store.updateClip(clip.id,{waypoints:clip.waypoints!.filter((_,i)=>i!==index)})}>Remove this point</button>:null}
-                </div>
-              ))}
+              <p className="my-2 text-xs text-muted">Select any point to edit it. Start is fixed so the camera never jumps. The end can be moved freely. Use Split view to see the route and the shot together.</p>
+              <div className="flex flex-wrap gap-2">
+                {(clip.waypoints??[]).map((point,index) =>
+                  <button type="button" key={index} className="btn text-xs"
+                    data-on={store.activeWaypoint?.clipId===clip.id&&store.activeWaypoint.index===index}
+                    onClick={()=>{store.setActiveWaypoint({clipId:clip.id,index});store.setControlMode("path");store.setTime(clip.start+point.t*clip.duration);}}>
+                    Point {index+1} · {Math.round(point.t*100)}%
+                  </button>
+                )}
+              </div>
+              {(() => {
+                const index=store.activeWaypoint?.clipId===clip.id ? store.activeWaypoint.index : 1;
+                const points=clip.waypoints??[];
+                const point=points[index];
+                if(!point) return <p className="text-xs text-muted">Choose a route point above.</p>;
+                const change=(direction:"left"|"right"|"up"|"down"|"forward"|"backward")=>{
+                  if(index===0){store.setStatus("The first point stays at the starting camera position");return;}
+                  const next=points.map((p,i)=>i===index?{...p,offset:adjustWaypoint(p.offset,store.project.camera,direction,0.2)}:p);
+                  store.updateClip(clip.id,{waypoints:next});
+                };
+                return <div className="mt-3 rounded-lg border border-border bg-surface p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <strong className="text-sm">Editing point {index+1}</strong>
+                    <span className="text-xs text-muted">{index===0?"Fixed starting point":"Move it in the shot"}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["left","right","up","down","forward","backward"] as const).map(direction=>
+                      <button key={direction} type="button" className="btn text-xs" disabled={index===0}
+                        onClick={()=>change(direction)}>{direction==="forward"?"Move toward subject":direction==="backward"?"Move away":`Move ${direction}`}</button>
+                    )}
+                  </div>
+                  {index>0&&index<points.length-1?<label className="mt-3 block text-xs text-muted">When should the camera reach this point?
+                    <input aria-label="Waypoint timing" className="w-full" type="range" min={points[index-1]!.t+0.01} max={points[index+1]!.t-0.01} step={0.01} value={point.t}
+                      onChange={e=>store.updateClip(clip.id,{waypoints:points.map((p,i)=>i===index?{...p,t:Number(e.target.value)}:p)},true)} />
+                    <span>{Math.round(point.t*100)}% of this movement</span>
+                  </label>:null}
+                  {points.length>2&&index>0&&index<points.length-1?
+                    <button className="btn mt-2" type="button" onClick={()=>{store.updateClip(clip.id,{waypoints:points.filter((_,i)=>i!==index)});store.setActiveWaypoint({clipId:clip.id,index:Math.max(0,index-1)});}}>Remove selected point</button>:null}
+                </div>;
+              })()}
+              <details className="mt-3">
+                <summary className="cursor-pointer text-xs text-muted">Advanced: exact coordinates and timings</summary>
+                <p className="my-2 text-xs text-muted">Values are offsets from the original camera, in metres. Use only for technical adjustments.</p>
+                {(clip.waypoints??[]).map((point,index)=>
+                  <div key={index} className="my-2 grid grid-cols-4 gap-2 rounded-lg bg-surface p-2">
+                    <NumberBox label="Progress %" value={point.t*100} step={5} onChange={v=>store.updateClip(clip.id,{waypoints:clip.waypoints!.map((p,i)=>i===index?{...p,t:Math.max(0,Math.min(100,v))/100}:p)},true)} />
+                    {(["x","y","z"] as const).map(axis=><NumberBox key={axis} label={`${axis.toUpperCase()} m`} value={point.offset[axis]} step={0.1} onChange={v=>store.updateClip(clip.id,{waypoints:clip.waypoints!.map((p,i)=>i===index?{...p,offset:{...p.offset,[axis]:v}}:p)},true)} />)}
+                  </div>
+                )}
+              </details>
             </div>
           ) : null}
         </div>
