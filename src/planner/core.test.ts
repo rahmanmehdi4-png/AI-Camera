@@ -387,3 +387,27 @@ describe("prompt and project file", () => {
     assert.ok(blob.size > 40);
   });
 });
+
+
+test("all prompt exports are detailed and explicitly instruct visual LLM translation", () => {
+  const old = createProject("Legacy simple");
+  old.mode = "simple";
+  const modern = structuredClone(old);
+  modern.mode = "detailed";
+  const scene = (project: typeof old) => ({
+    duration: project.duration,
+    characters: project.characters.map(toSceneCharacter),
+    props: project.props.map(toSceneProp),
+    camera: project.camera,
+    motions: project.motions,
+    profile: project.profile,
+    mode: project.mode,
+  });
+  const simpleSaved = generatePrompt(scene(old));
+  const detailed = generatePrompt(scene(modern));
+  assert.equal(simpleSaved, detailed);
+  assert.match(simpleSaved, /VISUAL CAMERA STORYBOARD/);
+  assert.match(simpleSaved, /camera-view\.png/);
+  assert.match(simpleSaved, /Do not copy raw world coordinates/);
+  assert.match(simpleSaved, /Base position/);
+});

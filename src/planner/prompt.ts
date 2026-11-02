@@ -163,12 +163,20 @@ export function generatePrompt(project: PromptProject): string {
   const summary = cameraSummary(project.camera, focus, forward, height);
   const issues = validateMotions(project.motions, duration);
   const lines: string[] = [];
+  // Always produce the full reference even when importing a project saved with
+  // the discontinued "simple" setting. The LLM, not the user, translates it.
+  const mode: PromptMode = "detailed";
+
+  lines.push("GROK — VISUAL CAMERA TRANSLATION BRIEF");
+  lines.push("This document is technical evidence for a language model translating a 3D scene into detailed, natural cinematic instructions for an AI video generator. It is not a list of commands that the video model is expected to execute numerically.");
+  lines.push("Use camera-view.png as the authoritative start-of-shot frame. Use pose-reference.png to understand body orientation and character relationships. annotated-scene.png shows editor geometry only; never treat the workspace viewpoint as the desired video camera.");
+  lines.push("Translate the shot into explicit viewer-relative terms: who is visible, from which side, high or low viewpoint, framing, camera proximity, and changes in each movement interval. Interpret X/Y/Z values only as supporting evidence. Do not copy raw world coordinates as camera instructions for H3 Max.");
+  lines.push("Resolve contradictions by comparing the video-shot screenshot against the numeric setup. If a character, contact or motion is ambiguous, describe only what is supported; do not invent anatomical detail or extra actions. Treat camera translation as an addendum to the user's separate ultimate prompt, not a replacement.");
+  lines.push("");
 
   if (project.profile === "h3max") {
     lines.push(
-      project.mode === "simple"
-        ? `${fmtNum(duration, 0)}-second continuous shot.`
-        : `${fmtNum(duration, 0)}-second continuous shot. Profile: H3 Max. Describe only the staged poses, placement, and camera.`,
+      `${fmtNum(duration, 0)}-second continuous shot. Profile: H3 Max. Describe only the staged poses, placement, and camera.`,
     );
   } else {
     lines.push(
@@ -182,7 +190,7 @@ export function generatePrompt(project: PromptProject): string {
     lines.push("");
     lines.push(characters.length === 1 ? "Character:" : "Characters:");
     for (const character of characters) {
-      for (const line of characterBlock(character, project.props, project.mode)) lines.push(line);
+      for (const line of characterBlock(character, project.props, mode)) lines.push(line);
     }
   }
 
@@ -196,7 +204,7 @@ export function generatePrompt(project: PromptProject): string {
   if (project.props.length) {
     lines.push("");
     lines.push("Set:");
-    for (const prop of project.props) lines.push(propBlock(prop, project.mode));
+    for (const prop of project.props) lines.push(propBlock(prop, mode));
   }
 
   lines.push("");
@@ -205,7 +213,7 @@ export function generatePrompt(project: PromptProject): string {
   lines.push(
     `${shot} shot, ${project.camera.aspect}, ${summary.approach}, ${summary.elevationText}. Distance about ${fmtNum(summary.distance)} m.`,
   );
-  if (project.mode === "detailed") {
+  if (mode === "detailed") {
     const end = resolveCamera(project.camera, project.motions, duration);
     lines.push(
       `Base position ${fmtNum(project.camera.position.x, 2)}, ${fmtNum(project.camera.position.y, 2)}, ${fmtNum(project.camera.position.z, 2)} m. Target ${fmtNum(project.camera.target.x, 2)}, ${fmtNum(project.camera.target.y, 2)}, ${fmtNum(project.camera.target.z, 2)} m.`,
@@ -223,6 +231,24 @@ export function generatePrompt(project: PromptProject): string {
   }
 
   lines.push("");
+  lines.push("VISUAL CAMERA STORYBOARD (interpret alongside camera-view.png):");
+  // These are visually interpretable checkpoints, not instructions to jump
+  // between frames or assume hard cuts. Sampling includes simultaneous moves.
+  const checkpoints = project.motions.length ? [0, 0.25, 0.5, 0.75, 1] : [0, 1];
+  for (const fraction of checkpoints) {
+    const at = duration * fraction;
+    const resolved = resolveCamera(project.camera, project.motions, at);
+    const summaryAt = cameraSummary(
+      { ...project.camera, position: resolved.position, target: resolved.target, fov: resolved.fov, roll: resolved.roll },
+      focus, forward, height,
+    );
+    lines.push(
+      `At ${fmtNum(at, 1)}s: ${summaryAt.shot} framing from ${summaryAt.approach}, ${summaryAt.elevationText}; camera approximately ${fmtNum(summaryAt.distance)} m from its aim point. ${fmtNum(resolved.fov)}° vertical lens field of view.`,
+    );
+  }
+  lines.push("The above checkpoints describe one continuous camera journey, not five separate cuts. Match the beginning to the real shot preview and narrate every direction change in natural language.");
+
+  lines.push("");
   lines.push("Motion:");
   if (issues.length) {
     lines.push("Timeline has errors. Fix them before trusting the move list.");
@@ -235,7 +261,7 @@ export function generatePrompt(project: PromptProject): string {
     );
   } else {
     const classes = new Set(clips.map((clip) => motionClass(clip.kind)));
-    for (const clip of clips) lines.push(describeClip(clip, project.mode));
+    for (const clip of clips) lines.push(describeClip(clip, mode));
     if (classes.has("move") && classes.has("zoom")) {
       lines.push("A camera move and an optical zoom both occur. Keep them distinct.");
     }

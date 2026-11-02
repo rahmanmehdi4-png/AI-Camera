@@ -129,7 +129,7 @@ export function createProject(name = "Untitled shot"): Project {
     camera: defaultCamera(),
     motions: [],
     profile: "h3max",
-    mode: "simple",
+    mode: "detailed",
   };
 }
 
