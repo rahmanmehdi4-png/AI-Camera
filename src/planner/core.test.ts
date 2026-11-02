@@ -23,6 +23,8 @@ import {
   placeOnProp,
   projectFromJson,
   projectToJson,
+  toSceneCharacter,
+  toSceneProp,
   type Character,
 } from "./project.ts";
 import { buildZip } from "./zip.ts";
