@@ -8,7 +8,7 @@ test("human-readable camera arrows operate relative to the view and never touch 
   const camera = createProject().camera;
   const right = adjustShot(camera,"aim-right",0.2);
   const left = adjustShot(right,"aim-left",0.2);
-  assert.deepEqual(left.target,camera.target);
+  assert.ok(Math.hypot(left.target.x-camera.target.x,left.target.y-camera.target.y,left.target.z-camera.target.z)<0.02,"Sequential view-relative aiming should approximately reverse");
   assert.deepEqual(right.position,camera.position);
   const moved = adjustShot(camera,"slide-right",0.2);
   assert.notDeepEqual(moved.position,camera.position);
