@@ -20,6 +20,7 @@ export type StageHooks = {
   selectWaypoint: (clipId: string, index: number) => void;
   updateWaypoint: (clipId: string, index: number, offset: Vec3) => void;
   getView: () => ViewMode;
+  getSplitRatio: () => number;
   getTime: () => number;
   isPlaying: () => boolean;
   setPlaying: (playing: boolean) => void;
@@ -74,7 +75,7 @@ export class Stage {
   private radius = 6.4;
   private readonly look = new THREE.Vector3(0, 0.95, 0);
   private readonly touchPointers = new Map<number, { x: number; y: number }>();
-  private pinch: { distance: number; x: number; y: number } | null = null;
+  private pinch: { distance: number; x: number; y: number; shot: boolean } | null = null;
   private playTime = 0;
   private wasPlaying = false;
   private lastUi = 0;
@@ -515,10 +516,10 @@ export class Stage {
     if (mode === "scene") return { scene: { x: 0, y: 0, w, h }, camera: null };
     if (mode === "camera") return { scene: null, camera: { x: 0, y: 0, w, h } };
     if (w >= 640 && w >= h) {
-      const left = Math.round(w * 0.5);
+      const left = Math.round(w * this.hooks.getSplitRatio());
       return { scene: { x: 0, y: 0, w: left, h }, camera: { x: left, y: 0, w: w - left, h } };
     }
-    const top = Math.round(h * 0.4);
+    const top = Math.round(h * this.hooks.getSplitRatio());
     return { scene: { x: 0, y: top, w, h: h - top }, camera: { x: 0, y: 0, w, h: top } };
   }
 
@@ -667,7 +668,10 @@ export class Stage {
     this.touchPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (this.touchPointers.size >= 2) {
       const [a, b] = [...this.touchPointers.values()];
-      this.pinch = { distance: Math.hypot(a.x - b.x, a.y - b.y), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const centreX = (a.x+b.x)/2, centreY = (a.y+b.y)/2;
+      const shot = this.locate({clientX:centreX,clientY:centreY} as PointerEvent)?.view === "shot" && this.hooks.getControlMode() === "camera";
+      this.pinch = { distance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), x: centreX, y: centreY, shot };
+      if (shot) this.hooks.begin();
       if (this.drag) this.hooks.end();
       this.drag = null;
       return;
@@ -822,9 +826,15 @@ export class Stage {
       if (this.touchPointers.size >= 2 && this.pinch) {
         const [a, b] = [...this.touchPointers.values()];
         const distance = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
-        this.zoomView(this.pinch.distance / distance);
-        this.panEditor((a.x + b.x) / 2 - this.pinch.x, (a.y + b.y) / 2 - this.pinch.y);
-        this.pinch = { distance, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        if (this.pinch.shot) {
+          const cam = this.hooks.getProject().camera;
+          const fov = THREE.MathUtils.clamp(cam.fov * this.pinch.distance / distance, 8, 120);
+          this.hooks.applyDrag({ camera: { ...cam, fov } }, false);
+        } else {
+          this.zoomView(this.pinch.distance / distance);
+          this.panEditor((a.x + b.x) / 2 - this.pinch.x, (a.y + b.y) / 2 - this.pinch.y);
+        }
+        this.pinch = { distance, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, shot: this.pinch.shot };
         return;
       }
     }
@@ -911,7 +921,10 @@ export class Stage {
 
   private onPointerUp = (event: PointerEvent) => {
     this.touchPointers.delete(event.pointerId);
-    if (this.touchPointers.size < 2) this.pinch = null;
+    if (this.touchPointers.size < 2) {
+      if (this.pinch?.shot) this.hooks.end();
+      this.pinch = null;
+    }
     if (this.drag) this.hooks.end();
     this.drag = null;
   };

@@ -55,6 +55,8 @@ export type PlannerState = {
   activeWaypoint: { clipId: string; index: number } | null;
   setActiveWaypoint: (value: { clipId: string; index: number } | null) => void;
   view: ViewMode;
+  splitRatio: number;
+  setSplitRatio: (ratio: number) => void;
   past: Snap[];
   future: Snap[];
   gesture: Snap | null;
@@ -132,6 +134,7 @@ export const usePlanner = create<PlannerState>((set, get) => ({
   pathAxis: "horizontal",
   activeWaypoint: null,
   view: "split",
+  splitRatio: 0.5,
   past: [],
   future: [],
   gesture: null,
@@ -187,6 +190,7 @@ export const usePlanner = create<PlannerState>((set, get) => ({
       status: `${controlMode[0]!.toUpperCase()}${controlMode.slice(1)} controls active` };
   }),
   setView: (view) => set({ view }),
+  setSplitRatio: (ratio) => set({ splitRatio: Math.max(0.25, Math.min(0.75, ratio)) }),
   setTime: (time) => set({ time: Math.max(0, Math.min(get().project.duration, time)) }),
   setPlaying: (playing) => set({ playing }),
   setStatus: (status) => set({ status }),
