@@ -118,6 +118,7 @@ export function PlannerApp() {
   const [nudgeOpen, setNudgeOpen] = useState(false);
   const [nudgeStep, setNudgeStep] = useState(0.1);
   const [nudgeAxis, setNudgeAxis] = useState<"position" | "rotation" | "joint">("position");
+  const [lastNudge, setLastNudge] = useState<string | null>(null);
   const [projects, setProjects] = useState<StoredProject[] | null>(null);
   const [clipId, setClipId] = useState<string | null>(null);
   const { project } = store;
@@ -195,6 +196,7 @@ export function PlannerApp() {
   const selection = store.selection;
 
   function nudge(axis: "x" | "y" | "z", amount: number) {
+    setLastNudge(`${axis}${amount>0?"+":"-"}`);
     const value = amount * (nudgeAxis === "position" ? nudgeStep : Math.max(1, nudgeStep * 100));
     const selected = store.selection;
     if (nudgeAxis === "joint") {
@@ -221,7 +223,7 @@ export function PlannerApp() {
         } else {
           store.patchCamera({ position: { ...camera.position, [axis]: camera.position[axis] + value } }, true);
         }
-      } else store.setStatus("Select Position to nudge the shot camera or aim point");
+      } else store.setStatus("Select Move to change the shot camera position or aim point");
     }
   }
   function activateMode(mode: ControlMode) {
@@ -605,9 +607,10 @@ export function PlannerApp() {
             </div>
             <button className="btn pointer-events-auto" title="Zoom out of the workspace" aria-label="Zoom out" type="button" onClick={() => viewRef.current?.zoomView(1.3)}><ZoomOut className="size-4" /></button>
             <button className="btn pointer-events-auto" title="Zoom into the workspace" aria-label="Zoom in" type="button" onClick={() => viewRef.current?.zoomView(0.77)}><ZoomIn className="size-4" /></button>
-            {(store.view === "camera" || store.view === "split") ? (
-              <button className="btn pointer-events-auto" type="button" aria-label="Zoom in the actual shot" title="Zoom the video shot, not the workspace" onClick={() => { store.patchCamera(adjustShot(store.project.camera,"zoom-in",0.2),true); store.setStatus("Shot lens zoomed in"); }}>Shot +</button>
-            ) : null}
+            {(store.view === "camera" || store.view === "split") ? <>
+              <button className="btn pointer-events-auto" type="button" aria-label="Zoom out the actual shot" title="Reduce the video shot magnification" onClick={()=>store.patchCamera(adjustShot(store.project.camera,"zoom-out",0.2),true)}>Shot −</button>
+              <button className="btn pointer-events-auto" type="button" aria-label="Zoom in the actual shot" title="Magnify the video shot without moving the camera" onClick={() => store.patchCamera(adjustShot(store.project.camera,"zoom-in",0.2),true)}>Shot +</button>
+            </> : null}
             <button className="btn pointer-events-auto" title="Reset the workspace view without moving objects" aria-label="Reset workspace view" type="button" onClick={() => viewRef.current?.resetView()}><Crosshair className="size-4" /></button>
             <button className="btn pointer-events-auto" type="button" title="Fine movement controls" onClick={() => setNudgeOpen((v) => !v)}>
               <Settings2 className="size-4" /> <span className="hidden md:inline">Precision</span>
@@ -634,19 +637,24 @@ export function PlannerApp() {
           {nudgeOpen ? (
             <div className="pointer-events-auto absolute bottom-20 right-2 z-10 w-[min(20rem,94%)] rounded-2xl border border-border bg-surface p-3 shadow-2xl">
               <div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">Precision controls</h3><button className="btn btn-ghost" type="button" aria-label="Close precision controls" onClick={() => setNudgeOpen(false)}>×</button></div>
-              <p className="mb-2 text-xs text-muted">Select a person, prop or camera. Tap arrows to move exactly one step. Choose Joint to rotate a selected limb.</p>
+              <p className="mb-2 text-xs text-muted">Advanced world-axis controls (X/Y/Z), not screen-relative arrows. For shot framing, prefer the Camera panel’s Look, Move and Lens controls.</p>
+              <p className="mb-2 text-xs text-accent">Last adjustment: {lastNudge??"none"} · Editing {store.selection?.type??"workspace"}</p>
               <div className="mb-2 grid grid-cols-3 gap-1">{(["position", "rotation", "joint"] as const).map((mode) => <button key={mode} type="button" className="btn" data-on={nudgeAxis === mode} onClick={() => setNudgeAxis(mode)}>{mode === "position" ? "Move" : mode === "rotation" ? "Rotate" : "Joint"}</button>)}</div>
               <div className="mb-2 grid grid-cols-3 gap-1">{([0.01, 0.1, 0.5] as const).map((step) => <button key={step} className="btn" data-on={nudgeStep === step} type="button" onClick={() => setNudgeStep(step)}>{nudgeAxis === "position" ? `${step * 100} cm` : `${Math.max(1, step * 100)}°`}</button>)}</div>
               <div className="grid grid-cols-3 gap-2 text-center">
-                <button className="btn" onClick={() => nudge("x", -1)} aria-label="Move left" title="Left / negative X"><ArrowLeft className="size-5" /></button>
-                <button className="btn" onClick={() => nudge("y", 1)} aria-label="Move up" title="Up / positive Y"><ArrowUp className="size-5" /></button>
-                <button className="btn" onClick={() => nudge("x", 1)} aria-label="Move right" title="Right / positive X"><ArrowRight className="size-5" /></button>
-                <button className="btn" onClick={() => nudge("z", -1)} aria-label="Move backward" title="Negative Z">Z−</button>
-                <button className="btn" onClick={() => nudge("y", -1)} aria-label="Move down" title="Down / negative Y"><ArrowDown className="size-5" /></button>
-                <button className="btn" onClick={() => nudge("z", 1)} aria-label="Move forward" title="Positive Z">Z+</button>
+                <button className="btn" data-on={lastNudge==="x-"} onClick={() => nudge("x", -1)} aria-label="World X minus" title="World X−, not screen left"><ArrowLeft className="size-5" /></button>
+                <button className="btn" data-on={lastNudge==="y+"} onClick={() => nudge("y", 1)} aria-label="World Y plus" title="World Y up"><ArrowUp className="size-5" /></button>
+                <button className="btn" data-on={lastNudge==="x+"} onClick={() => nudge("x", 1)} aria-label="World X plus" title="World X+, not screen right"><ArrowRight className="size-5" /></button>
+                <button className="btn" data-on={lastNudge==="z-"} onClick={() => nudge("z", -1)} aria-label="World Z minus" title="Negative world Z">Z−</button>
+                <button className="btn" data-on={lastNudge==="y-"} onClick={() => nudge("y", -1)} aria-label="World Y minus" title="World Y down"><ArrowDown className="size-5" /></button>
+                <button className="btn" data-on={lastNudge==="z+"} onClick={() => nudge("z", 1)} aria-label="World Z plus" title="Positive world Z">Z+</button>
               </div>
             </div>
           ) : null}
+          <div className="pointer-events-none absolute left-2 top-[8.2rem] z-10 rounded-lg bg-surface/90 px-2 py-1 text-xs text-accent">
+            Editing: {store.controlMode==="workspace"?"Workspace view":store.controlMode==="camera"?"Shot camera":store.controlMode==="path"?"Camera route":store.controlMode==="object"?(selectedProp?.name??"Scene prop"):(selectedCharacter?.name??"Person")}
+            {store.controlMode==="character"&&store.joint?` · ${JOINT_LABEL[store.joint]}`:""}
+          </div>
           {helpMode ? <div className="pointer-events-auto absolute right-2 top-1/3 z-50 w-[min(22rem,94%)] rounded-xl border border-accent bg-surface p-3 shadow-2xl">
             <p className="text-sm font-semibold">Help Mode is on</p>
             <p className="mt-1 text-xs text-muted">{controlHelp || "Tap any button to see its explanation. Buttons will not perform actions until you exit Help Mode."}</p>
