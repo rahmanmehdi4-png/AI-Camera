@@ -109,6 +109,9 @@ export function PlannerApp() {
   });
   const [mobile, setMobile] = useState<"library" | "pose" | "camera" | "time" | "export" | null>(null);
   const [help, setHelp] = useState(false);
+  const [helpMode, setHelpMode] = useState(false);
+  const [controlHelp, setControlHelp] = useState<string | null>(null);
+  const [chromeHidden, setChromeHidden] = useState(false);
   const [resetMenu, setResetMenu] = useState(false);
   const [nudgeOpen, setNudgeOpen] = useState(false);
   const [nudgeStep, setNudgeStep] = useState(0.1);
@@ -219,6 +222,14 @@ export function PlannerApp() {
       } else store.setStatus("Select Position to nudge the shot camera or aim point");
     }
   }
+  function activateMode(mode: ControlMode) {
+    store.setControlMode(mode);
+    if (mode === "camera") store.select({type:"camera"});
+    if (mode === "path") setMobile("time");
+    if (mode === "character" && store.selection?.type !== "character" && project.characters[0]) store.select({ type:"character",id:project.characters[0].id });
+    if (mode === "object" && project.props[0]) store.select({ type:"prop", id:project.props[0].id });
+  }
+
   const selectedCharacter =
     selection?.type === "character"
       ? project.characters.find((character) => character.id === selection.id)
@@ -481,7 +492,32 @@ export function PlannerApp() {
   );
 
   return (
-    <div className="app-shell relative flex flex-col bg-bg text-fg">
+    <div className="app-shell relative flex flex-col bg-bg text-fg" onClickCapture={(event) => {
+      if(!helpMode) return;
+      const button = (event.target as HTMLElement).closest("button");
+      if(!button || button.hasAttribute("data-help-toggle")) return;
+      event.preventDefault();event.stopPropagation();
+      const label = (button.getAttribute("aria-label") || button.innerText || "Control").trim();
+      const explanation: Record<string,string> = {
+        Scene:"Shows the 3D workspace. Moving this view does not change the video shot.",
+        Shot:"Shows the exact shot camera framing that will be exported for Grok.",
+        Split:"See the workspace and shot camera together. Drag their divider to resize.",
+        Explore:"Rotate and zoom your workspace view without moving objects.",
+        People:"Select a person, modify their position or adjust individual limbs.",
+        Camera:"Change the actual video shot viewpoint, direction or lens zoom.",
+        Props:"Add and position scene furniture and other objects.",
+        Movement:"Edit the camera route and timeline. These movements affect the exported video.",
+        Precision:"Exact adjustments for selected object and joint movements.",
+        Frame:"Centre your workspace around the current selection.",
+        "Zoom in":"Moves your workspace viewpoint closer. It does not zoom the actual video shot.",
+        "Zoom out":"Moves your workspace viewpoint further away, not the shot camera.",
+        "Shot +":"Magnifies the actual video shot without moving the 3D workspace.",
+        Undo:"Revert the most recent scene change.",
+        Redo:"Reapply a scene change you undid.",
+        "Export for Grok":"Download the detailed camera instructions and visual reference images together.",
+      };
+      setControlHelp(button.getAttribute("title") || explanation[label] || `${label}: ${button.getAttribute("aria-label") || "Tap this control to perform the named action."}`);
+    }}>
       <header className="flex items-center gap-2 border-b border-border px-3 py-2">
         <div className="hidden size-8 items-center justify-center rounded-lg bg-primary text-primary-fg sm:flex">
           <Camera className="size-4" />
@@ -497,6 +533,13 @@ export function PlannerApp() {
             onBlur={() => store.end()}
           />
         </div>
+        <button className="btn !min-h-9" type="button" data-help-toggle="true" data-on={helpMode}
+          aria-pressed={helpMode} title="Help Mode: tap any button to learn what it does" onClick={() => {setHelpMode(v=>!v);setControlHelp(null);}}>
+          <CircleHelp className="size-4" /> <span className="hidden sm:inline">{helpMode?"Exit help":"Help mode"}</span>
+        </button>
+        <button className="btn !min-h-9" type="button" data-help-toggle="true" title="Temporarily hide the extra editing toolbars" onClick={()=>{setChromeHidden(v=>!v);setMobile(null);}}>
+          {chromeHidden?"Show tools":"Hide tools"}
+        </button>
         <button className="btn btn-ghost" type="button" aria-label="Undo" onClick={() => store.undo()}>
           <Undo2 className="size-4" />
         </button>
@@ -533,22 +576,20 @@ export function PlannerApp() {
               ))}
             </div>
           </div>
-          <div className="pointer-events-none absolute left-2 right-2 top-[4.8rem] z-10 flex justify-center">
+          <div className={`pointer-events-none absolute left-2 right-2 top-[4.8rem] z-10 justify-center ${chromeHidden?"hidden":"flex"}`}>
             <div className="pointer-events-auto flex max-w-full gap-1 overflow-x-auto rounded-xl border border-border bg-surface/95 p-1 shadow-lg" role="group" aria-label="Control mode">
-              {MODES.map((mode) => (
-                <button key={mode.id} className="btn mode-button shrink-0" data-on={store.controlMode === mode.id} title={mode.description} aria-label={`${mode.label} control mode`} type="button" onClick={() => {
-                  store.setControlMode(mode.id);
-                  if (mode.id === "camera") store.select({ type: "camera" });
-                  if (mode.id === "path") setMobile("time");
-                  if (mode.id === "character" && store.selection?.type !== "character" && project.characters[0]) store.select({ type: "character", id: project.characters[0].id });
-                  if (mode.id === "object" && project.props[0]) store.select({ type: "prop", id: project.props[0].id });
-                }}>
-                  <mode.icon className="size-4" /> <span>{mode.label}</span>
-                </button>
-              ))}
+              <select className="field !min-h-9 !w-44 2xl:hidden" aria-label="Choose editing mode" value={store.controlMode} onChange={e=>activateMode(e.target.value as ControlMode)}>
+                {MODES.map(mode=><option value={mode.id} key={mode.id}>{mode.label}</option>)}
+              </select>
+              <div className="hidden gap-1 2xl:flex">
+                {MODES.map(mode => <button key={mode.id} className="btn mode-button shrink-0" data-on={store.controlMode===mode.id} type="button"
+                  title={mode.description} aria-label={`${mode.label} control mode`} onClick={()=>activateMode(mode.id)}>
+                  <mode.icon className="size-4"/><span>{mode.label}</span>
+                </button>)}
+              </div>
             </div>
           </div>
-          <div className="pointer-events-none absolute bottom-3 left-3 flex flex-wrap gap-2">
+          <div className={`pointer-events-none absolute bottom-3 left-3 flex-wrap gap-2 ${chromeHidden?"hidden":"flex"}`}>
             <div className="pointer-events-auto flex gap-1 rounded-xl border border-border bg-surface p-1">
               {TOOLS.map((tool) => (
                 <button key={tool.id} className="btn" data-on={store.tool === tool.id} type="button" onClick={() => store.setTool(tool.id)} aria-label={tool.label} title={`Tool: ${tool.label}`}>
@@ -598,6 +639,11 @@ export function PlannerApp() {
               </div>
             </div>
           ) : null}
+          {helpMode ? <div className="pointer-events-auto absolute right-2 top-1/3 z-50 w-[min(22rem,94%)] rounded-xl border border-accent bg-surface p-3 shadow-2xl">
+            <p className="text-sm font-semibold">Help Mode is on</p>
+            <p className="mt-1 text-xs text-muted">{controlHelp || "Tap any button to see its explanation. Buttons will not perform actions until you exit Help Mode."}</p>
+            <button data-help-toggle="true" className="btn mt-2 !min-h-9" type="button" onClick={()=>{setHelpMode(false);setControlHelp(null);}}>Done · use controls</button>
+          </div> : null}
           <p className="pointer-events-none absolute top-[8.4rem] right-3 rounded-lg bg-surface px-2 py-1 text-xs text-muted">
             {store.status}
           </p>
