@@ -548,7 +548,7 @@ export function PlannerApp() {
         <div className="hidden size-8 items-center justify-center rounded-lg bg-primary text-primary-fg sm:flex">
           <Camera className="size-4" />
         </div>
-        <span className="shrink-0 rounded-md border border-accent/50 bg-accent/10 px-2 py-1 text-[10px] font-semibold tracking-wider text-accent" aria-label="Application version 2.1">V2.1</span>
+        <span className="shrink-0 rounded-md border border-accent/50 bg-accent/10 px-2 py-1 text-[10px] font-semibold tracking-wider text-accent" aria-label="Application version 2.2 development">V2.2</span>
         <div className="min-w-[9rem] flex-[1_1_12rem]">
           <input
             className="field font-medium"
