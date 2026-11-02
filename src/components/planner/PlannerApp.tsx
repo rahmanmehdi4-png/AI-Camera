@@ -356,7 +356,7 @@ export function PlannerApp() {
       }}>×</button></div>)}</div></details> : null}
       <div className="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto">
         {GROUP_PRESETS.filter((preset) => preset.count === poseCount && preset.name.toLowerCase().includes(poseSearch.toLowerCase())).map((preset) => (
-          <button key={preset.id} type="button" className="btn h-auto flex-col items-start text-left" title={preset.description} onClick={() => { store.applyGroup(preset); store.setControlMode("character"); }}><span className="text-xs font-semibold">{preset.name}</span><span className="text-[11px] text-muted">{preset.description}</span></button>
+          <button key={preset.id} type="button" className="btn h-auto flex-col items-start text-left" title={preset.description} onClick={() => { store.applyGroup(preset); store.setControlMode("character"); window.requestAnimationFrame(() => viewRef.current?.frameAll()); }}><span className="text-xs font-semibold">{preset.name}</span><span className="text-[11px] text-muted">{preset.description}</span></button>
         ))}
       </div>
       <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs text-muted">
@@ -620,7 +620,10 @@ export function PlannerApp() {
               </button>
             ) : null}
             <button className="btn pointer-events-auto" type="button" onClick={() => viewRef.current?.frame()}>
-              <Focus className="size-4" /> <span className="hidden md:inline">Frame</span>
+              <Focus className="size-4" /> <span className="hidden md:inline">Frame selected</span>
+            </button>
+            <button className="btn pointer-events-auto" title="Fit everyone into the workspace view without changing the actual shot camera" type="button" onClick={() => viewRef.current?.frameAll()}>
+              Fit everyone
             </button>
           </div>
           {nudgeOpen ? (

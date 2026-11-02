@@ -172,6 +172,19 @@ export class Stage {
     this.tick();
   }
 
+  frameAll() {
+    const box = new THREE.Box3();
+    const project = this.hooks.getProject();
+    for (const person of project.characters) {
+      const joints = worldJoints(person.pose,person.position,person.rotation,person.scale);
+      for(const point of Object.values(joints)) box.expandByPoint(new THREE.Vector3(point.x,point.y,point.z));
+    }
+    for(const item of project.props) box.expandByPoint(new THREE.Vector3(item.position.x,item.position.y,item.position.z));
+    if(box.isEmpty()) return;
+    this.look.copy(box.getCenter(new THREE.Vector3()));
+    this.radius=THREE.MathUtils.clamp(box.getSize(new THREE.Vector3()).length()*1.25,2.6,120);
+  }
+
   focusJoint() {
     const selection = this.hooks.getSelection();
     const joint = this.hooks.getJoint();

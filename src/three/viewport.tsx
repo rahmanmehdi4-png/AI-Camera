@@ -6,6 +6,7 @@ import { Stage, type StageHooks } from "./stage";
 export type ViewportHandle = {
   capture: (kind: "pose" | "camera" | "annotated") => Promise<Blob>;
   frame: () => void;
+  frameAll: () => void;
   resetView: () => void;
   zoomView: (factor: number) => void;
   focusJoint: () => void;
@@ -27,6 +28,7 @@ export const Viewport = forwardRef<ViewportHandle>(function Viewport(_, ref) {
       return stage.capture(kind);
     },
     frame: () => stageRef.current?.frame(),
+    frameAll: () => stageRef.current?.frameAll(),
     resetView: () => stageRef.current?.resetView(),
     zoomView: (factor) => stageRef.current?.zoomView(factor),
     focusJoint: () => stageRef.current?.focusJoint(),
