@@ -58,7 +58,7 @@ import {
 import { PROP_LIBRARY, type PropKind } from "@/planner/props";
 import { ADULT_GROUP_PRESETS, SOLO_ADULT_PRESETS, GROUP_PRESETS, applySoloAdultPreset, type GroupPreset } from "@/planner/group-presets";
 import { PresetScenePreview } from "./PresetScenePreview";
-import { deleteStoredProject, listProjects, loadLastProject, saveProject, type StoredProject } from "@/planner/storage";
+import { deleteStoredProject, listProjects, loadLastProject, saveProject, saveSnapshot, listSnapshots, restoreSnapshot, type StoredProject, type SavedSnapshot } from "@/planner/storage";
 import { JOINT_GROUPS, JOINT_LABEL, PRESET_LABEL, type JointId, type PresetId } from "@/planner/skeleton";
 import { blobBytes, buildZip, downloadBlob } from "@/planner/zip";
 import { usePlanner, type Tool, type ViewMode, type ControlMode } from "@/state/planner-store";
@@ -120,6 +120,7 @@ export function PlannerApp() {
   const [nudgeAxis, setNudgeAxis] = useState<"position" | "rotation" | "joint">("position");
   const [lastNudge, setLastNudge] = useState<string | null>(null);
   const [projects, setProjects] = useState<StoredProject[] | null>(null);
+  const [snapshots, setSnapshots] = useState<SavedSnapshot[] | null>(null);
   const [clipId, setClipId] = useState<string | null>(null);
   const { project } = store;
 
@@ -489,6 +490,26 @@ export function PlannerApp() {
           Export for Grok
         </button>
       </div>
+      <details className="rounded-lg border border-border p-2">
+        <summary className="cursor-pointer text-sm font-semibold">Restore points and backups</summary>
+        <p className="mt-2 text-xs text-muted">Save a checkpoint before experimenting. These copies stay on this device. Download the project JSON for a separate backup.</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button className="btn text-xs" type="button" onClick={async()=>{
+            try{await saveSnapshot(project);setSnapshots(await listSnapshots(project.id));store.setStatus("Restore point saved");}
+            catch{store.setStatus("Could not save restore point");}
+          }}>Save restore point</button>
+          <button className="btn text-xs" type="button" onClick={()=>void listSnapshots(project.id).then(setSnapshots).catch(()=>store.setStatus("Could not load restore points"))}>View restore points</button>
+        </div>
+        {snapshots ? <div className="mt-2 flex max-h-44 flex-col gap-2 overflow-y-auto">
+          {snapshots.length===0?<p className="text-xs text-muted">No restore points yet.</p>:snapshots.map(item=>
+            <button className="btn !h-auto !justify-start text-left text-xs" type="button" key={item.key}
+              onClick={async()=>{if(!window.confirm("Restore this earlier version? Current unsaved changes will be replaced."))return;
+                try{const restored=await restoreSnapshot(item.key);if(restored){store.replaceProject(restored,"Restored checkpoint");setSnapshots(null);}}
+                catch{store.setStatus("Restore failed");}
+              }}>{item.name} · {new Date(item.createdAt).toLocaleString()}</button>
+          )}
+        </div>:null}
+      </details>
       <p className="text-xs text-muted">
         The ZIP includes actual start, middle and end shot previews, pose and scene references, a detailed Grok translation brief and your editable project.
         Bring your own photograph separately.

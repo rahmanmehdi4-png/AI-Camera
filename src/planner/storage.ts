@@ -1,7 +1,7 @@
 import { projectFromJson, projectToJson, type Project } from "./project.ts";
 
 const DB_NAME = "camera-pose-planner";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const LAST_KEY = "camera-pose-planner:last";
 
 export type StoredProject = {
@@ -18,6 +18,7 @@ function openDb(): Promise<IDBDatabase> {
       const db = request.result;
       if (!db.objectStoreNames.contains("projects")) db.createObjectStore("projects", { keyPath: "id" });
       if (!db.objectStoreNames.contains("meta")) db.createObjectStore("meta");
+      if (!db.objectStoreNames.contains("snapshots")) db.createObjectStore("snapshots", {keyPath:"key"});
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error("Could not open local project storage."));
@@ -96,4 +97,40 @@ export async function deleteStoredProject(id: string): Promise<void> {
     tx.onerror = () => reject(tx.error ?? new Error("Could not delete the project."));
   });
   db.close();
+}
+
+export type SavedSnapshot = { key: string; projectId: string; createdAt: number; name: string; data: Project };
+export async function listSnapshots(projectId: string): Promise<SavedSnapshot[]> {
+  const db=await openDb();
+  try {
+    const tx=db.transaction("snapshots","readonly");
+    const all=await requestToPromise(tx.objectStore("snapshots").getAll() as IDBRequest<SavedSnapshot[]>);
+    return all.filter(x=>x.projectId===projectId).sort((a,b)=>b.createdAt-a.createdAt);
+  } finally { db.close(); }
+}
+export async function saveSnapshot(project: Project): Promise<SavedSnapshot> {
+  const createdAt=Date.now();
+  const record:SavedSnapshot={
+    key:project.id+":"+createdAt+":"+Math.random().toString(36).slice(2,9),
+    projectId:project.id,createdAt,name:project.name,data:structuredClone(project)
+  };
+  const db=await openDb();
+  try {
+    const tx=db.transaction("snapshots","readwrite");
+    tx.objectStore("snapshots").put(record);
+    await new Promise<void>((resolve,reject)=>{
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error("Checkpoint save failed"));
+      tx.onabort=()=>reject(tx.error??new Error("Checkpoint save interrupted"));
+    });
+    return record;
+  } finally { db.close(); }
+}
+export async function restoreSnapshot(key:string):Promise<Project|null> {
+  const db=await openDb();
+  try {
+    const tx=db.transaction("snapshots","readonly");
+    const item=await requestToPromise(tx.objectStore("snapshots").get(key) as IDBRequest<SavedSnapshot|undefined>);
+    return item ? projectFromJson(JSON.stringify(item.data)).project : null;
+  } finally { db.close(); }
 }
