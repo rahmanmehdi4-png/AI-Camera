@@ -235,9 +235,9 @@ export class Stage {
     this.radius = THREE.MathUtils.clamp(this.radius, 2.4, 120);
   }
 
-  async capture(kind: "pose" | "camera" | "annotated"): Promise<Blob> {
+  async capture(kind: "pose" | "camera" | "annotated", atTime?: number): Promise<Blob> {
     const project = this.hooks.getProject();
-    this.sync(project, this.hooks.getTime(), false);
+    this.sync(project, atTime ?? this.hooks.getTime(), false);
     const aspect = ASPECT_VALUE[project.camera.aspect];
     const long = 1280;
     const width = kind === "camera" ? (aspect >= 1 ? long : Math.round(long * aspect)) : long;

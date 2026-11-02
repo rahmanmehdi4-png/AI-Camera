@@ -243,16 +243,21 @@ export function PlannerApp() {
   async function exportPack() {
     const view = viewRef.current;
     if (!view) return;
-    store.setStatus("Rendering screenshots…");
+    if(issues.length){store.setStatus("Fix the camera timeline errors before exporting: "+issues[0]!.message);return;}
+    store.setStatus("Rendering start, middle and end shot references…");
     try {
-      const pose = await view.capture("pose");
-      const shot = await view.capture("camera");
-      const annotated = await view.capture("annotated");
+      const pose = await view.capture("pose",0);
+      const shot = await view.capture("camera",0);
+      const mid = await view.capture("camera",project.duration*0.5);
+      const end = await view.capture("camera",project.duration);
+      const annotated = await view.capture("annotated",0);
       const slug = project.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "shot";
       const zip = buildZip([
         { name: "instructions.txt", data: new TextEncoder().encode(prompt) },
         { name: "pose-reference.png", data: await blobBytes(pose) },
         { name: "camera-view.png", data: await blobBytes(shot) },
+        { name: "camera-mid.png", data: await blobBytes(mid) },
+        { name: "camera-end.png", data: await blobBytes(end) },
         { name: "annotated-scene.png", data: await blobBytes(annotated) },
         { name: "project.json", data: new TextEncoder().encode(projectToJson(project)) },
       ]);
@@ -483,7 +488,7 @@ export function PlannerApp() {
         </button>
       </div>
       <p className="text-xs text-muted">
-        The zip holds the pose reference, the exact shot, an annotated scene, the instructions, and the project file.
+        The ZIP includes actual start, middle and end shot previews, pose and scene references, a detailed Grok translation brief and your editable project.
         Bring your own photograph separately.
       </p>
     </div>

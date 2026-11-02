@@ -4,7 +4,7 @@ import { usePlanner, type Selection } from "@/state/planner-store";
 import { Stage, type StageHooks } from "./stage";
 
 export type ViewportHandle = {
-  capture: (kind: "pose" | "camera" | "annotated") => Promise<Blob>;
+  capture: (kind: "pose" | "camera" | "annotated", atTime?: number) => Promise<Blob>;
   frame: () => void;
   frameAll: () => void;
   resetView: () => void;
@@ -22,10 +22,10 @@ export const Viewport = forwardRef<ViewportHandle>(function Viewport(_, ref) {
   hooksRef.current = hooks;
 
   useImperativeHandle(ref, () => ({
-    capture: (kind) => {
+    capture: (kind, atTime) => {
       const stage = stageRef.current;
       if (!stage) return Promise.reject(new Error("The 3D view is not ready yet."));
-      return stage.capture(kind);
+      return stage.capture(kind, atTime);
     },
     frame: () => stageRef.current?.frame(),
     frameAll: () => stageRef.current?.frameAll(),
