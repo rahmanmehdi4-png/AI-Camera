@@ -19,7 +19,8 @@ async function request(path,mode='cors'){let task;handlers.fetch({request:{url:'
 data.set('pose-planner-legacy',new Map());data.set('unrelated-app-cache',new Map());
 await lifecycle('install');await lifecycle('activate');assert.ok(claimed);assert.ok(!data.has('pose-planner-legacy'));assert.ok(data.has('unrelated-app-cache'));
 const cache=[...data.keys()].find(k=>k.startsWith('camera-pose-v2-'));assert.ok(cache);
-const assets=[...data.get(cache).keys()];assert.ok(assets.some(a=>a.endsWith('.woff2')));assert.ok(assets.includes('/release.json'));
+const assets=[...data.get(cache).keys()];assert.ok(assets.some(a=>a.endsWith('.js')));
+assert.ok(assets.some(a=>a.endsWith('.css')));assert.ok(assets.includes('/release.json'));
 offline=true;assert.match(await (await request('/saved-scene','navigate')).text(),/3D Camera/);
 for(const asset of assets.filter(a=>/\.(js|css|woff2|png)$/.test(a)))assert.ok((await request(asset)).ok,asset);
 offline=false;assert.equal(await (await request('/','navigate')).text(),'fresh navigation');
