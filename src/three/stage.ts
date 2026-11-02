@@ -171,6 +171,18 @@ export class Stage {
     this.tick();
   }
 
+  focusJoint() {
+    const selection = this.hooks.getSelection();
+    const joint = this.hooks.getJoint();
+    if (selection?.type !== "character" || !joint) return;
+    const person = this.hooks.getProject().characters.find(c => c.id === selection.id);
+    if (!person) return;
+    const point = worldJoints(person.pose, person.position, person.rotation, person.scale)[joint];
+    if (!point) return;
+    this.look.set(point.x, point.y, point.z);
+    this.radius = THREE.MathUtils.clamp(this.radius, 1.6, 3.6);
+  }
+
   resetView() {
     this.theta = 0.78;
     this.phi = 1.08;
@@ -634,7 +646,7 @@ export class Stage {
     const view = this.viewRects(rect.width, rect.height).scene;
     if (!view) return null;
     const pointer = new THREE.Vector2(event.clientX - rect.left, event.clientY - rect.top);
-    const touchRadius = event.pointerType === "mouse" ? 15 : 32;
+    const touchRadius = event.pointerType === "mouse" ? 18 : 44;
     let best = touchRadius * touchRadius;
     let found: { id: string; joint: JointId } | null = null;
     for (const ch of project.characters) {
@@ -732,7 +744,7 @@ export class Stage {
     if (this.hooks.getTool() === "pose" && (jointHit || poseBody)) {
       const source = jointHit ?? poseBody!;
       const id = String(source.object.userData.id);
-      let joint = (jointHit?.object.userData.joint ?? null) as JointId | null;
+      let joint = (source.object.userData.joint ?? null) as JointId | null;
       if (!joint) {
         const person = this.people.get(id);
         const point = source.point;

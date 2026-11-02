@@ -8,6 +8,7 @@ export type ViewportHandle = {
   frame: () => void;
   resetView: () => void;
   zoomView: (factor: number) => void;
+  focusJoint: () => void;
 };
 
 export const Viewport = forwardRef<ViewportHandle>(function Viewport(_, ref) {
@@ -27,6 +28,7 @@ export const Viewport = forwardRef<ViewportHandle>(function Viewport(_, ref) {
     frame: () => stageRef.current?.frame(),
     resetView: () => stageRef.current?.resetView(),
     zoomView: (factor) => stageRef.current?.zoomView(factor),
+    focusJoint: () => stageRef.current?.focusJoint(),
   }));
 
   useEffect(() => {

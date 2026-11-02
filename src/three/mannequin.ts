@@ -28,6 +28,7 @@ export class Mannequin {
   readonly pivots = {} as Record<JointId, THREE.Group>;
   readonly markers: THREE.Mesh[] = [];
   private readonly body: THREE.MeshStandardMaterial;
+  private readonly activeBody: THREE.MeshStandardMaterial;
   private readonly ink: THREE.MeshStandardMaterial;
   private readonly markerMat: THREE.MeshStandardMaterial;
   private readonly activeMarkerMat: THREE.MeshStandardMaterial;
@@ -38,6 +39,7 @@ export class Mannequin {
       roughness: 0.48,
       metalness: 0.06,
     });
+    this.activeBody = new THREE.MeshStandardMaterial({ color: character.color, emissive: "#225c59", emissiveIntensity: 0.4, roughness: 0.5 });
     this.ink = new THREE.MeshStandardMaterial({ color: "#28313a", roughness: 0.72 });
     this.markerMat = new THREE.MeshStandardMaterial({
       color: "#e39a4d",
@@ -61,7 +63,7 @@ export class Mannequin {
       mesh.name = `surface-${bone.id}`;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
-      mesh.userData = { pick: "character", id: character.id };
+      mesh.userData = { pick: "character", id: character.id, joint: bone.id };
       pivot.add(mesh);
       this.surfaces.push(mesh);
       const marker = new THREE.Mesh(MARKER, this.markerMat);
@@ -91,6 +93,10 @@ export class Mannequin {
       this.pivots[id].rotation.set(rad(e.x), rad(e.y), rad(e.z));
     }
     this.body.color.set(character.color);
+    this.activeBody.color.set(character.color);
+    for (const mesh of this.surfaces) {
+      if (mesh.name.startsWith("surface-")) mesh.material = showMarkers && mesh.name === `surface-${selectedJoint}` ? this.activeBody : this.body;
+    }
     const bulk = bodyBulk(character.bulk);
     for (const mesh of this.surfaces) mesh.scale.set(bulk, 1, bulk);
     for (const marker of this.markers) {
@@ -102,6 +108,7 @@ export class Mannequin {
   }
   dispose() {
     this.body.dispose();
+    this.activeBody.dispose();
     this.ink.dispose();
     this.markerMat.dispose();
     this.activeMarkerMat.dispose();

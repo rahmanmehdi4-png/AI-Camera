@@ -396,6 +396,7 @@ export function PlannerApp() {
           reading={reading?.label ?? "unclear"}
           confidence={reading?.confidence ?? "low"}
           props={project.props}
+          onFocusJoint={() => viewRef.current?.focusJoint()}
         />
       ) : null}
       {selectedCharacter ? groupLibrary : null}
@@ -782,11 +783,13 @@ function CharacterPanel({
   reading,
   confidence,
   props,
+  onFocusJoint,
 }: {
   character: ReturnType<typeof usePlanner.getState>["project"]["characters"][number];
   reading: string;
   confidence: string;
   props: ReturnType<typeof usePlanner.getState>["project"]["props"];
+  onFocusJoint: () => void;
 }) {
   const store = usePlanner();
   const patch = (partial: Partial<typeof character>, history = false) => store.patchCharacter(character.id, partial, history);
@@ -800,7 +803,9 @@ function CharacterPanel({
         Read as {reading === "unclear" ? "unclear" : POSE_PHRASE[reading as Exclude<PoseLabel, "auto">] ?? reading}
         {confidence === "low" ? " · low confidence" : ""}
       </p>
-      <div className="grid grid-cols-3 gap-2">
+      <details className="rounded-xl border border-border p-2">
+      <summary className="cursor-pointer text-xs font-semibold">Advanced person coordinates and scale</summary>
+      <div className="mt-2 grid grid-cols-3 gap-2">
         {(["x", "y", "z"] as const).map((axis) => (
           <NumberBox key={axis} label={`Pos ${axis.toUpperCase()}`} step={0.05} value={character.position[axis]} onChange={(value) => patch({ position: { ...character.position, [axis]: value } })} />
         ))}
@@ -812,6 +817,7 @@ function CharacterPanel({
         ))}
       </div>
       <NumberBox label="Bulk" step={0.05} value={character.bulk} onChange={(bulk) => patch({ bulk })} />
+      </details>
       <div className="flex flex-wrap gap-2">
         {(Object.keys(PRESET_LABEL) as PresetId[]).map((preset) => (
           <button key={preset} className="btn" type="button" onClick={() => { store.setControlMode("character"); store.applyPose(preset); }}>
@@ -889,21 +895,23 @@ function CharacterPanel({
         ))}
       </div>
       {store.joint ? (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-xl border border-border bg-bg p-3">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <strong className="text-sm">Editing {JOINT_LABEL[store.joint]}</strong>
+            <HelpTip text="Tap a limb directly on the 3D person, or select its name above. Adjust bend and twist with sliders. The selected body part glows teal." />
+            <button className="btn !min-h-9 text-xs" type="button" onClick={onFocusJoint}>Focus limb</button>
+            <button className="btn !min-h-9 text-xs" type="button" onClick={() => store.setJointEuler(character.id,store.joint!,{x:0,y:0,z:0},true)}>Straighten</button>
+          </div>
           {(["x", "y", "z"] as const).map((axis) => (
-            <NumberBox
-              key={axis}
-              label={axis === "x" ? "Bend" : axis === "y" ? "Twist" : "Side"}
-              step={1}
-              value={character.pose[store.joint as JointId][axis]}
-              onChange={(value) =>
-                store.setJointEuler(character.id, store.joint as JointId, {
-                  ...character.pose[store.joint as JointId],
-                  [axis]: value,
-                })
-              }
-            />
+            <label className="mb-3 flex flex-col gap-1" key={axis}>
+              <span className="flex justify-between text-xs"><span>{axis==="x"?"Bend forwards / backwards":axis==="y"?"Turn / twist":"Move sideways"}</span><span className="font-mono">{Math.round(character.pose[store.joint as JointId][axis])}°</span></span>
+              <input className="w-full accent-primary" type="range" min={-180} max={180} step={2} aria-label={`${JOINT_LABEL[store.joint]} ${axis} rotation`}
+                value={Math.min(180,Math.max(-180,character.pose[store.joint as JointId][axis]))}
+                onPointerDown={() => store.begin()} onPointerUp={() => store.end()} onPointerCancel={() => store.end()}
+                onChange={event => store.setJointEuler(character.id,store.joint!,{...character.pose[store.joint as JointId],[axis]:Number(event.target.value)},false)} />
+            </label>
           ))}
+          <p className="text-xs text-muted">Use Undo to restore the previous position. Switch to Explore to rotate the workspace without moving the person.</p>
         </div>
       ) : null}
       <div className="flex gap-2">
