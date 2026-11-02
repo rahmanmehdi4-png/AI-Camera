@@ -7,7 +7,7 @@ import { lowestBodyY } from "./body.ts";
 
 test("solo posing references are distinct from standard and paired-adult presets", () => {
   assert.equal(GROUP_PRESETS.length, 112);
-  assert.equal(ADULT_GROUP_PRESETS.length, 12);
+  assert.equal(ADULT_GROUP_PRESETS.length, 42);
   assert.equal(SOLO_ADULT_PRESETS.length, 73);
   const ids = SOLO_ADULT_PRESETS.map(p => p.id);
   assert.equal(new Set(ids).size, ids.length);
