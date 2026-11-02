@@ -170,7 +170,7 @@ export function generatePrompt(project: PromptProject): string {
   lines.push("GROK — VISUAL CAMERA TRANSLATION BRIEF");
   lines.push("This document is technical evidence for a language model translating a 3D scene into detailed, natural cinematic instructions for an AI video generator. It is not a list of commands that the video model is expected to execute numerically.");
   lines.push("Use camera-view.png as the authoritative start-of-shot frame. Use pose-reference.png to understand body orientation and character relationships. annotated-scene.png shows editor geometry only; never treat the workspace viewpoint as the desired video camera.");
-  lines.push("Translate the shot into explicit viewer-relative terms: who is visible, from which side, high or low viewpoint, framing, camera proximity, and changes in each movement interval. Interpret X/Y/Z values only as supporting evidence. Do not copy raw world coordinates as camera instructions for H3 Max.");
+  lines.push("Translate the shot into explicit viewer-relative terms: who is visible, from which side, high or low viewpoint, framing, camera proximity, and changes in each movement interval. Interpret X/Y/Z values only as supporting evidence. Do not copy raw world coordinates as camera instructions for the video generator.");
   lines.push("Resolve contradictions by comparing the video-shot screenshot against the numeric setup. If a character, contact or motion is ambiguous, describe only what is supported; do not invent anatomical detail or extra actions. Treat camera translation as an addendum to the user's separate ultimate prompt, not a replacement.");
   lines.push("");
 
