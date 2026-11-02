@@ -108,8 +108,8 @@ export const Viewport = forwardRef<ViewportHandle>(function Viewport(_, ref) {
       aria-orientation={wide?"vertical":"horizontal"} aria-valuenow={Math.round(hooks.splitRatio*100)} aria-valuemin={25} aria-valuemax={75}
       title="Drag to give more space to the Scene or Shot preview"
       className="absolute z-20 flex cursor-col-resize items-center justify-center touch-none"
-      style={wide ? {left:`${hooks.splitRatio*100}%`,top:0,bottom:0,width:24,transform:"translateX(-50%)"} :
-        {top:`${hooks.splitRatio*100}%`,left:0,right:0,height:24,transform:"translateY(-50%)",cursor:"row-resize"}}
+      style={wide ? {left:`${hooks.splitRatio*100}%`,top:"38%",height:"24%",width:24,transform:"translateX(-50%)"} :
+        {top:`${hooks.splitRatio*100}%`,left:"34%",width:"32%",height:24,transform:"translateY(-50%)",cursor:"row-resize"}}
       onPointerDown={e=>{e.stopPropagation();e.currentTarget.setPointerCapture(e.pointerId);}}
       onPointerMove={resizeSplit}
       onPointerUp={e=>{resizeSplit(e);e.currentTarget.releasePointerCapture(e.pointerId);}}
