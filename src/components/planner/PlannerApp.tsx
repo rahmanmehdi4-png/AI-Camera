@@ -43,6 +43,7 @@ import {
   type AspectId,
   type CameraPresetId,
 } from "@/planner/camera";
+import { adjustShot, adjustWaypoint, type ShotAction } from "@/planner/shot-controls";
 import { classifyPose, POSE_LABELS, POSE_PHRASE, type PoseLabel } from "@/planner/detect";
 import { validateMotions, insertPathWaypoint, MOTION_KINDS, MOTION_LABEL, amountUnit, directionsFor, type MotionKind } from "@/planner/motion";
 import { generatePrompt } from "@/planner/prompt";
@@ -125,7 +126,7 @@ export function PlannerApp() {
         camera: project.camera,
         motions: project.motions,
         profile: project.profile,
-        mode: project.mode,
+        mode: "detailed",
       }),
     [project],
   );
@@ -429,12 +430,7 @@ export function PlannerApp() {
         <button className="btn" data-on={project.profile === "wan3"} type="button" onClick={() => store.commit((draft) => void (draft.profile = "wan3"))}>
           Wan 3
         </button>
-        <button className="btn" data-on={project.mode === "simple"} type="button" onClick={() => store.commit((draft) => void (draft.mode = "simple"))}>
-          Simple
-        </button>
-        <button className="btn" data-on={project.mode === "detailed"} type="button" onClick={() => store.commit((draft) => void (draft.mode = "detailed"))}>
-          Detailed
-        </button>
+        <p className="col-span-2 text-xs text-muted">Export: always detailed. Grok translates the shot preview and technical data into natural cinematic language.</p>
       </div>
       <textarea className="area area-prompt font-mono text-xs leading-relaxed" readOnly value={prompt} aria-label="Generated instructions" />
       <div className="grid grid-cols-2 gap-2">
@@ -524,7 +520,7 @@ export function PlannerApp() {
         </button>
       </header>
       <div className="flex min-h-0 flex-1">
-        <aside className="panel-scroll hidden w-72 shrink-0 border-r border-border lg:block">{library}</aside>
+        <aside className="panel-scroll hidden w-72 shrink-0 border-r border-border 2xl:block">{library}</aside>
         <div className="relative min-w-0 flex-1">
           <Viewport ref={viewRef} />
           <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center gap-2">
@@ -562,6 +558,9 @@ export function PlannerApp() {
             </div>
             <button className="btn pointer-events-auto" title="Zoom out of the workspace" aria-label="Zoom out" type="button" onClick={() => viewRef.current?.zoomView(1.3)}><ZoomOut className="size-4" /></button>
             <button className="btn pointer-events-auto" title="Zoom into the workspace" aria-label="Zoom in" type="button" onClick={() => viewRef.current?.zoomView(0.77)}><ZoomIn className="size-4" /></button>
+            {(store.view === "camera" || store.view === "split") ? (
+              <button className="btn pointer-events-auto" type="button" aria-label="Zoom in the actual shot" title="Zoom the video shot, not the workspace" onClick={() => { store.patchCamera(adjustShot(store.project.camera,"zoom-in",0.2),true); store.setStatus("Shot lens zoomed in"); }}>Shot +</button>
+            ) : null}
             <button className="btn pointer-events-auto" title="Reset the workspace view without moving objects" aria-label="Reset workspace view" type="button" onClick={() => viewRef.current?.resetView()}><Crosshair className="size-4" /></button>
             <button className="btn pointer-events-auto" type="button" title="Fine movement controls" onClick={() => setNudgeOpen((v) => !v)}>
               <Settings2 className="size-4" /> <span className="hidden md:inline">Precision</span>
@@ -602,21 +601,21 @@ export function PlannerApp() {
             {store.status}
           </p>
         </div>
-        <aside className="hidden min-h-0 w-80 shrink-0 flex-col border-l border-border lg:flex">
+        <aside className="hidden min-h-0 w-80 shrink-0 flex-col border-l border-border 2xl:flex">
           <div className="panel-scroll min-h-0 flex-1">{inspector}</div>
           <div className="panel-scroll max-h-[min(24rem,48%)] shrink-0 border-t border-border bg-surface">{exporter}</div>
         </aside>
       </div>
-      <div className="hidden border-t border-border lg:block">{renderTimeline()}</div>
+      <div className="hidden border-t border-border 2xl:block">{renderTimeline()}</div>
       {mobile ? (
-        <div className="panel-scroll max-h-[48dvh] border-t border-border bg-surface lg:hidden">
+        <div className="panel-scroll absolute bottom-[3.5rem] left-1 right-1 z-30 max-h-[min(60dvh,32rem)] rounded-xl border border-border bg-surface shadow-2xl md:left-auto md:w-[min(26rem,95vw)] 2xl:hidden">
           {mobile === "library" ? library : null}
           {mobile === "pose" || mobile === "camera" ? inspector : null}
           {mobile === "time" ? renderTimeline() : null}
           {mobile === "export" ? exporter : null}
         </div>
       ) : null}
-      <nav className="grid grid-cols-5 border-t border-border bg-surface lg:hidden">
+      <nav className="grid grid-cols-5 border-t border-border bg-surface 2xl:hidden">
         {(
           [
             ["library", "Add", Plus],
@@ -637,7 +636,7 @@ export function PlannerApp() {
           </button>
         ))}
       </nav>
-      <div className="hidden items-center justify-between gap-3 border-t border-border px-3 py-2 text-xs text-muted lg:flex">
+      <div className="hidden items-center justify-between gap-3 border-t border-border px-3 py-2 text-xs text-muted 2xl:flex">
         <span>Grid +Z is north. Drag the scene to orbit. Drag the shot view to aim the camera. Scroll to dolly.</span>
         <span className="flex gap-2">
           <button className="btn" type="button" onClick={() => setHelp(true)}>
@@ -954,56 +953,96 @@ function PropPanel({ prop }: { prop: ReturnType<typeof usePlanner.getState>["pro
   );
 }
 
+function HelpTip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return <span className="relative inline-flex shrink-0 align-middle">
+    <button type="button" className="btn !min-h-7 !min-w-7 !rounded-full !p-1" aria-expanded={open} aria-label="What does this do?" title={text}
+      onClick={() => setOpen(value => !value)}><CircleHelp className="size-4" /></button>
+    {open ? <span role="tooltip" className="absolute right-0 top-9 z-50 w-64 max-w-[80vw] rounded-lg border border-accent bg-surface p-3 text-left text-xs leading-relaxed text-fg shadow-2xl">
+      {text}
+      <button type="button" className="mt-2 block text-accent underline" onClick={() => setOpen(false)}>Close explanation</button>
+    </span> : null}
+  </span>;
+}
+
 function CameraPanel() {
   const store = usePlanner();
   const camera = store.project.camera;
-  const patch = (partial: Partial<typeof camera>) => store.patchCamera(partial, false);
+  const [advanced, setAdvanced] = useState(false);
+  const [step, setStep] = useState(0.15);
+  const [lastAction, setLastAction] = useState<ShotAction | null>(null);
+  const patch = (partial: Partial<typeof camera>) => store.patchCamera(partial, true);
   const focusCharacter = store.project.characters.find((character) => store.selection?.type === "character" && character.id === store.selection.id);
+  const perform = (action: ShotAction) => {
+    store.patchCamera(adjustShot(store.project.camera, action, step), true);
+    setLastAction(action);
+  };
+  const control = (action: ShotAction, label: string) => (
+    <button key={action} className="btn flex-1 min-w-0 text-xs" type="button"
+      data-on={lastAction === action} aria-pressed={lastAction === action}
+      aria-label={label} onClick={() => perform(action)}>{label}</button>
+  );
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold">Shot camera</h2>
-      <p className="text-xs text-muted">
-        {formatFocal(camera.fov)} vertical · drag the shot pane to orbit, shift-drag to pan
-      </p>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold">Shot camera</h2>
+        <HelpTip text="These controls change the actual video shot, not your editor view. Aim turns the lens; Move repositions the camera; Lens zoom changes magnification." />
+      </div>
+      <p className="text-xs text-muted">Look through the Shot preview. Every direction below follows what the camera sees, not X/Y/Z axes.</p>
+      <div className="flex flex-wrap gap-1">
         {(Object.keys(CAMERA_PRESET_LABEL) as CameraPresetId[]).map((preset) => (
-          <button
-            key={preset}
-            className="btn"
-            type="button"
-            onClick={() => {
-              const focus = focusCharacter ? (preset === "close" ? headFocus(focusCharacter) : groupFocus({ ...store.project, props: [], characters: [focusCharacter] })) : groupFocus(store.project);
-              const facing = focusCharacter ? classifyPose(focusCharacter).forward : { x: 0, y: 0, z: 1 };
-              const next = cameraPreset(preset, focus, facing);
-              store.patchCamera({ ...next }, true);
-            }}
-          >
-            {CAMERA_PRESET_LABEL[preset]}
-          </button>
+          <button key={preset} className="btn !min-h-9 text-xs" type="button" title={`Frame: ${CAMERA_PRESET_LABEL[preset]}`} onClick={() => {
+            const focus = focusCharacter ? (preset === "close" ? headFocus(focusCharacter) : groupFocus({ ...store.project, props: [], characters: [focusCharacter] })) : groupFocus(store.project);
+            const facing = focusCharacter ? classifyPose(focusCharacter).forward : { x: 0, y: 0, z: 1 };
+            store.patchCamera(cameraPreset(preset, focus, facing), true);
+          }}>{CAMERA_PRESET_LABEL[preset]}</button>
         ))}
       </div>
-      <div className="flex flex-wrap gap-2">
-        {ASPECTS.map((aspect) => (
-          <button key={aspect} className="btn" data-on={camera.aspect === aspect} type="button" onClick={() => store.patchCamera({ aspect: aspect as AspectId }, true)}>
-            {aspect}
-          </button>
-        ))}
+      <div className="flex items-center justify-between gap-2">
+        <label className="text-xs text-muted" htmlFor="shot-adjustment-step">Adjustment size</label>
+        <select id="shot-adjustment-step" className="field !w-auto" value={step} onChange={e => setStep(Number(e.target.value))}>
+          <option value={0.05}>Fine</option><option value={0.15}>Normal</option><option value={0.4}>Large</option>
+        </select>
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        {(["x", "y", "z"] as const).map((axis) => (
-          <NumberBox key={axis} label={`Cam ${axis.toUpperCase()}`} step={0.05} value={camera.position[axis]} onChange={(value) => patch({ position: { ...camera.position, [axis]: value } })} />
-        ))}
-        {(["x", "y", "z"] as const).map((axis) => (
-          <NumberBox key={`t${axis}`} label={`Target ${axis.toUpperCase()}`} step={0.05} value={camera.target[axis]} onChange={(value) => patch({ target: { ...camera.target, [axis]: value } })} />
-        ))}
+      <div className="rounded-xl border border-border bg-bg p-3">
+        <div className="mb-2 flex items-center gap-2"><span className="text-sm font-semibold">Aim</span><HelpTip text="Turn the shot camera left, right, up or down without moving its location." /></div>
+        <div className="flex flex-col items-center gap-1">
+          <div className="w-1/3">{control("aim-up","Look up")}</div>
+          <div className="flex w-full gap-1">{control("aim-left","Look left")}{control("aim-right","Look right")}</div>
+          <div className="w-1/3">{control("aim-down","Look down")}</div>
+        </div>
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <NumberBox label="FOV" step={1} value={camera.fov} onChange={(fov) => patch({ fov })} />
-        <NumberBox label="Roll" step={1} value={camera.roll} onChange={(roll) => patch({ roll })} />
+      <div className="rounded-xl border border-border bg-bg p-3">
+        <div className="mb-2 flex items-center gap-2"><span className="text-sm font-semibold">Position</span><HelpTip text="Move the camera body. Slide and raise move it with its aim intact; Closer and Further move towards or away from the subject." /></div>
+        <div className="grid grid-cols-2 gap-1">
+          {control("closer","Closer")}{control("further","Further")}
+          {control("slide-left","Slide left")}{control("slide-right","Slide right")}
+          {control("rise","Move up")}{control("lower","Move down")}
+        </div>
       </div>
+      <div className="rounded-xl border border-border bg-bg p-3">
+        <div className="mb-2 flex items-center gap-2"><span className="text-sm font-semibold">Lens zoom</span><HelpTip text="Magnify the picture without physically moving the shot camera. This is different from Closer and Further." /></div>
+        <div className="flex gap-2">{control("zoom-out","Zoom out")}{control("zoom-in","Zoom in")}</div>
+        <p className="mt-2 text-xs text-muted">{formatFocal(camera.fov)} equivalent · {camera.aspect}</p>
+      </div>
+      <details className="rounded-xl border border-border p-3" open={advanced} onToggle={e => setAdvanced(e.currentTarget.open)}>
+        <summary className="cursor-pointer text-sm font-semibold">Advanced camera settings</summary>
+        <p className="my-2 text-xs text-muted">For precise numerical work. The controls above are sufficient for normal use.</p>
+        <div className="mb-2 flex flex-wrap gap-2">
+          {ASPECTS.map(aspect => <button key={aspect} className="btn" data-on={camera.aspect===aspect} type="button" onClick={() => patch({aspect:aspect as AspectId})}>{aspect}</button>)}
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {(["x", "y", "z"] as const).map(axis => <NumberBox key={axis} label={`Cam ${axis.toUpperCase()}`} step={0.05} value={camera.position[axis]} onChange={value => patch({position:{...camera.position,[axis]:value}})} />)}
+          {(["x", "y", "z"] as const).map(axis => <NumberBox key={`t${axis}`} label={`Target ${axis.toUpperCase()}`} step={0.05} value={camera.target[axis]} onChange={value => patch({target:{...camera.target,[axis]:value}})} />)}
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <NumberBox label="FOV" step={1} value={camera.fov} onChange={fov => patch({fov})} />
+          <NumberBox label="Roll" step={1} value={camera.roll} onChange={roll => patch({roll})} />
+        </div>
+      </details>
       <label className="flex flex-col gap-1 text-sm">
         Shot length
-        <NumberBox label="Seconds" step={0.5} value={store.project.duration} onChange={(duration) => store.preview((draft) => void (draft.duration = Math.min(60, Math.max(1, duration))))} />
+        <NumberBox label="Seconds" step={0.5} value={store.project.duration} onChange={duration => store.commit(draft => void(draft.duration = Math.min(60, Math.max(1, duration))))} />
       </label>
     </section>
   );
