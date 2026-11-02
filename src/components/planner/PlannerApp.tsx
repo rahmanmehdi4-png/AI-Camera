@@ -353,12 +353,12 @@ export function PlannerApp() {
       </label>
       {showAdultPresets ? (
         <div className="mt-2 rounded-lg border border-border p-2">
-          <h4 className="mb-1 text-sm font-semibold">Adult / NSFW positions</h4>
-          {poseCount !== 2 ? (
-            <p className="text-xs text-muted">Select 2 people to see adult position presets.</p>
+          <h4 className="mb-1 text-sm font-semibold">Adult / NSFW positions · {ADULT_GROUP_PRESETS.filter(p => p.count === poseCount).length} for {poseCount} people</h4>
+          {poseCount === 4 ? (
+            <p className="text-xs text-muted">Choose 2 or 3 people above for adult arrangements.</p>
           ) : (
-            <div className="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto">
-              {ADULT_GROUP_PRESETS.filter((preset) => preset.name.toLowerCase().includes(poseSearch.toLowerCase())).map((preset) => (
+            <div className="grid max-h-60 grid-cols-2 gap-2 overflow-y-auto">
+              {ADULT_GROUP_PRESETS.filter((preset) => preset.count === poseCount && preset.name.toLowerCase().includes(poseSearch.toLowerCase())).map((preset) => (
                 <button key={preset.id} type="button" className="btn h-auto flex-col items-start text-left" title={preset.description} onClick={() => { store.applyGroup(preset); store.setControlMode("character"); }}>
                   <span className="text-xs font-semibold">{preset.name}</span>
                   <span className="text-[11px] text-muted">{preset.description}</span>

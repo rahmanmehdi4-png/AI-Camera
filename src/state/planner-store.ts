@@ -313,7 +313,11 @@ export const usePlanner = create<PlannerState>((set, get) => ({
         if (character) applyPreset(character, preset, preset !== "sit" && preset !== "lean");
       }, true);
     }),
-  applyGroup: (preset) => set((state) => edit(state, (project) => applyGroupPreset(project, preset), true)),
+  applyGroup: (preset) => set((state) => {
+    const changed = edit(state, (project) => applyGroupPreset(project, preset), true);
+    const id = changed.project?.characters[0]?.id;
+    return { ...changed, ...(id ? { selection: { type: "character" as const, id } } : {}) };
+  }),
   placeSelectedOn: (propId, mode) =>
     set((state) => {
       if (state.selection?.type !== "character") return {};

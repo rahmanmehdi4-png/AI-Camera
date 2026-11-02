@@ -1,6 +1,6 @@
 /** Non-graphic multi-person blocking presets; adult references use featureless mannequins. */
 import { applyPreset, createCharacter, nextCharacterName, type Project } from "./project.ts";
-import { clampPose, lowestJointDelta, worldJoints, type Pose, type PresetId } from "./skeleton.ts";
+import { clampPose, type Pose, type PresetId } from "./skeleton.ts";
 import { placeBodyOnFloor } from "./body.ts";
 
 export type GroupMember = {
@@ -85,11 +85,11 @@ export const ADULT_GROUP_PRESETS: GroupPreset[] = [
   ]),
   adult("cowgirl", "Cowgirl", "One reclining figure and one upright straddling seated figure", [
     { ...p("lie-up", 0, 0, 0), joints: { upperArmL: j(-26, 0, 20), upperArmR: j(-26, 0, -20) } },
-    { ...p("sit", 0, -0.02, 0), joints: { thighL: j(-85, 5, 32), thighR: j(-85, -5, -32), spine: j(-10, 0, 0), chest: j(-5, 0, 0), upperArmL: j(-12, 0, 30), upperArmR: j(-12, 0, -30) }, lift: 0.32 },
+    { ...p("kneel", 0, -0.08, 0), joints: { thighL: j(-15, 5, 25), thighR: j(-15, -5, -25), spine: j(-10, 0, 0), chest: j(-5, 0, 0), upperArmL: j(-12, 0, 30), upperArmR: j(-12, 0, -30) } },
   ]),
   adult("reverse-cowgirl", "Reverse Cowgirl", "One reclining figure and one seated figure facing away", [
     { ...p("lie-up", 0, 0, 0), joints: { upperArmL: j(-15, 0, 22), upperArmR: j(-15, 0, -22) } },
-    { ...p("sit", 0, 0.08, 180), joints: { thighL: j(-88, 6, 30), thighR: j(-88, -6, -30), spine: j(-16, 0, 0), upperArmL: j(-8, 0, 22), upperArmR: j(-8, 0, -22) }, lift: 0.34 },
+    { ...p("kneel", 0, 0.08, 180), joints: { thighL: j(-14, 6, 26), thighR: j(-14, -6, -26), spine: j(-16, 0, 0), upperArmL: j(-8, 0, 22), upperArmR: j(-8, 0, -22) } },
   ]),
   adult("doggy-style", "Doggy Style", "Forward-leaning kneeling figure with another figure positioned behind", [
     { ...p("kneel", 0, -0.25, 0), joints: { hips: j(28, 0, 0), spine: j(36, 0, 0), chest: j(17, 0, 0), upperArmL: j(-66, 0, 12), upperArmR: j(-66, 0, -12), thighL: j(-28, 0, 6), thighR: j(-28, 0, -6) } },
@@ -109,11 +109,11 @@ export const ADULT_GROUP_PRESETS: GroupPreset[] = [
   ]),
   adult("seated-straddle", "Seated Straddle", "Face-to-face seated figures, one raised over the other's lap", [
     { ...p("sit", 0, 0.12, 0), joints: { upperArmL: j(-25, 0, 18), upperArmR: j(-25, 0, -18), thighL: j(-85, 8, 12), thighR: j(-85, -8, -12) } },
-    { ...p("sit", 0, -0.19, 180), joints: { thighL: j(-83, 6, 35), thighR: j(-83, -6, -35), upperArmL: j(-44, 0, 28), upperArmR: j(-44, 0, -28) }, lift: 0.24 },
+    { ...p("kneel", 0, -0.36, 180), joints: { thighL: j(-20, 6, 25), thighR: j(-20, -6, -25), upperArmL: j(-44, 0, 28), upperArmR: j(-44, 0, -28) } },
   ]),
   adult("lap-sitting", "Lap Sitting", "One seated figure with a second seated figure facing sideways", [
     { ...p("sit", -0.09, 0.14, 0), joints: { upperArmL: j(-30, 0, 16), upperArmR: j(-30, 0, -16) } },
-    { ...p("sit", 0.1, -0.08, 90), joints: { thighL: j(-80, 8, 18), thighR: j(-80, -8, -18), upperArmL: j(-28, 0, 24) }, lift: 0.25 },
+    { ...p("sit", 0.52, -0.08, 90), joints: { thighL: j(-80, 8, 18), thighR: j(-80, -8, -18), upperArmL: j(-28, 0, 24) } },
   ]),
   adult("side-lying-face-to-face", "Side-Lying Face-to-Face", "Two nearby side-reclining figures oriented toward each other", [
     { ...p("lie-left", -0.2, -0.1, 90), joints: { thighL: j(-55, 0, 0), thighR: j(-48, 0, 0), upperArmL: j(-30, 0, -26) } },
@@ -126,6 +126,142 @@ export const ADULT_GROUP_PRESETS: GroupPreset[] = [
   adult("edge-of-bed", "Edge of Bed", "One seated figure with another standing close in front; add bed prop if needed", [
     { ...p("sit", 0, -0.32, 0), joints: { thighL: j(-85, 5, 12), thighR: j(-85, -5, -12), spine: j(-4, 0, 0), upperArmL: j(-16, 0, 18), upperArmR: j(-16, 0, -18) } },
     { ...p("stand", 0, 0.31, 180), joints: { upperArmL: j(-32, 0, 15), upperArmR: j(-32, 0, -15), forearmL: j(-35, 0, 0), forearmR: j(-35, 0, 0) } },
+  ]),
+
+  // Grounded, non-graphic additional arrangements for 2 and 3 mannequins.
+  adult("standing-embrace", "Standing Embrace", "Two standing figures close together, facing one another", [
+    { ...p("stand", 0, -0.4, 0), joints: { upperArmL: j(-45, 0, 28), upperArmR: j(-45, 0, -28), forearmL: j(-55, 0, 0), forearmR: j(-55, 0, 0) } },
+    { ...p("stand", 0, 0.4, 180), joints: { upperArmL: j(-48, 0, 25), upperArmR: j(-48, 0, -25), forearmL: j(-60, 0, 0), forearmR: j(-60, 0, 0) } },
+  ]),
+  adult("rear-embrace", "Rear Embrace", "Two standing figures close together, looking forward", [
+    { ...p("stand", 0, -0.36, 0), joints: { upperArmL: j(-38, 0, 26), upperArmR: j(-38, 0, -26) } },
+    { ...p("stand", 0, 0.44, 0), joints: { upperArmL: j(-46, 0, 38), upperArmR: j(-46, 0, -38), forearmL: j(-90, 0, 0), forearmR: j(-90, 0, 0) } },
+  ]),
+  adult("side-embrace", "Side Embrace", "Standing pair turned inward from opposite sides", [
+    { ...p("stand", -0.38, 0, 24), joints: { spine: j(0, 9, 0), upperArmR: j(-52, 0, -30), forearmR: j(-75, 0, 0) } },
+    { ...p("stand", 0.38, 0, -24), joints: { spine: j(0, -9, 0), upperArmL: j(-52, 0, 30), forearmL: j(-75, 0, 0) } },
+  ]),
+  adult("seated-face-to-face", "Seated Face-to-Face", "Two people seated close, gazing toward each other", [
+    { ...p("sit", 0, -0.62, 0), joints: { spine: j(-8, 0, 0), upperArmL: j(-35, 0, 24), upperArmR: j(-35, 0, -24) } },
+    { ...p("sit", 0, 0.62, 180), joints: { spine: j(-8, 0, 0), upperArmL: j(-40, 0, 20), upperArmR: j(-40, 0, -20) } },
+  ]),
+  adult("seated-rear-pair", "Seated Front and Back", "Two grounded seated figures looking in the same direction", [
+    { ...p("sit", 0, -0.65, 0), joints: { upperArmL: j(-50, 0, 20), upperArmR: j(-50, 0, -20) } },
+    { ...p("sit", 0, 0.65, 0), joints: { spine: j(-14, 0, 0), upperArmL: j(-25, 0, 30), upperArmR: j(-25, 0, -30) } },
+  ]),
+  adult("kneeling-embrace", "Kneeling Embrace", "A close kneeling pair facing each other", [
+    { ...p("kneel", 0, -0.51, 0), joints: { spine: j(-8, 0, 0), upperArmL: j(-45, 0, 28), upperArmR: j(-45, 0, -28) } },
+    { ...p("kneel", 0, 0.51, 180), joints: { spine: j(-10, 0, 0), upperArmL: j(-50, 0, 25), upperArmR: j(-50, 0, -25) } },
+  ]),
+  adult("side-kneeling", "Side-by-Side Kneeling", "A kneeling pair angled toward the centre", [
+    { ...p("kneel", -0.45, 0, 25), joints: { spine: j(0, 12, 0), head: j(-8, 10, 0), upperArmR: j(-40, 0, -25) } },
+    { ...p("kneel", 0.45, 0, -25), joints: { spine: j(0, -12, 0), head: j(-8, -10, 0), upperArmL: j(-40, 0, 25) } },
+  ]),
+  adult("reclined-overlook", "Reclined and Kneeling", "One figure lies back while a companion kneels beside them", [
+    { ...p("lie-up", -0.3, -0.16, 0), joints: { thighL: j(-25, 0, 6), thighR: j(-25, 0, -6), upperArmR: j(-45, 0, -28) } },
+    { ...p("kneel", 0.67, 0.15, -32), joints: { spine: j(22, 0, 0), chest: j(12, 0, 0), upperArmL: j(-65, 0, 20) } },
+  ]),
+  adult("seated-side-lean", "Seated Leaning Pair", "Two seated figures leaning towards each other", [
+    { ...p("sit", -0.46, 0, 10), joints: { spine: j(-10, 0, -14), head: j(-5, 0, -12), upperArmR: j(-35, 0, -30) } },
+    { ...p("sit", 0.46, 0, -10), joints: { spine: j(-10, 0, 14), head: j(-5, 0, 12), upperArmL: j(-35, 0, 30) } },
+  ]),
+  adult("standing-reclining", "Standing with Reclining Companion", "One standing figure angled toward a reclining companion", [
+    { ...p("lie-up", 0, -0.25, 0), joints: { thighL: j(-50, 0, 10), shinL: j(98, 0, 0), upperArmL: j(-40, 0, 28) } },
+    { ...p("stand", 0.65, 0.4, -42), joints: { hips: j(10, 0, 0), spine: j(18, 0, 0), head: j(-20, 0, 0), upperArmL: j(-30, 0, 22) } },
+  ]),
+  adult("one-knee-face-to-face", "One-Knee Face-to-Face", "A kneeling figure looks toward a standing partner", [
+    { ...p("kneel", 0, -0.46, 0), joints: { thighL: j(-65, 0, 10), shinL: j(80, 0, 0), upperArmL: j(-55, 0, 25) } },
+    { ...p("stand", 0, 0.51, 180), joints: { upperArmR: j(-30, 0, -35), head: j(12, 0, 0) } },
+  ]),
+  adult("mirrored-reclining", "Mirrored Reclining Pair", "Two reclining figures placed at mirrored diagonal angles", [
+    { ...p("lie-up", -0.48, -0.2, 25), joints: { thighL: j(-35, 0, 18), thighR: j(-16, 0, -7), upperArmR: j(-50, 0, -40) } },
+    { ...p("lie-up", 0.48, 0.2, 205), joints: { thighL: j(-15, 0, 7), thighR: j(-35, 0, -18), upperArmL: j(-50, 0, 40) } },
+  ]),
+  adult("opposite-side-recline", "Opposite Side-Lying Pair", "Two figures lying on their sides and facing inward", [
+    { ...p("lie-left", -0.4, -0.2, 60), joints: { thighL: j(-65, 0, 0), shinL: j(95, 0, 0), upperArmR: j(-36, 0, -25) } },
+    { ...p("lie-right", 0.4, 0.2, -120), joints: { thighR: j(-65, 0, 0), shinR: j(95, 0, 0), upperArmL: j(-36, 0, 25) } },
+  ]),
+  adult("rear-kneeling", "Rear Standing and Kneeling", "Standing figure with kneeling companion to the rear", [
+    { ...p("kneel", 0, -0.3, 0), joints: { spine: j(20, 0, 0), upperArmL: j(-55, 0, 16), upperArmR: j(-55, 0, -16) } },
+    { ...p("stand", 0, 0.62, 0), joints: { spine: j(-10, 0, 0), upperArmL: j(-35, 0, 22), upperArmR: j(-35, 0, -22) } },
+  ]),
+  adult("diagonal-face-to-face", "Diagonal Face-to-Face", "Two angled upright figures with staggered foot positions", [
+    { ...p("stand", -0.3, -0.35, 40), joints: { hips: j(0, 8, 0), upperArmL: j(-45, 0, 24), upperArmR: j(-45, 0, -24) } },
+    { ...p("stand", 0.3, 0.35, 220), joints: { hips: j(0, -8, 0), upperArmL: j(-42, 0, 24), upperArmR: j(-42, 0, -24) } },
+  ]),
+  adult("side-lying-rear", "Layered Side-Recline", "Two side-lying figures facing in a parallel direction", [
+    { ...p("lie-left", -0.44, -0.23, 0), joints: { thighL: j(-70, 0, 0), thighR: j(-40, 0, 0), upperArmR: j(-42, 0, -22) } },
+    { ...p("lie-left", 0.44, 0.23, 0), joints: { thighL: j(-40, 0, 0), thighR: j(-70, 0, 0), upperArmL: j(-42, 0, -22) } },
+  ]),
+  adult("trio-close-triangle", "Close Triangle Trio", "Three figures standing in a close inward-facing triangle", [
+    { ...p("stand", -0.55, -0.25, 65), joints: { upperArmR: j(-34, 0, -28) } },
+    { ...p("stand", 0.55, -0.25, -65), joints: { upperArmL: j(-34, 0, 28) } },
+    { ...p("stand", 0, 0.68, 180), joints: { upperArmL: j(-28, 0, 20), upperArmR: j(-28, 0, -20) } },
+  ]),
+  adult("trio-seated-centre", "Seated Centre with Standing Pair", "Seated central figure flanked by two standing companions", [
+    { ...p("sit", 0, -0.2, 0), joints: { upperArmL: j(-45, 0, 25), upperArmR: j(-45, 0, -25) } },
+    { ...p("stand", -0.7, 0.18, 16), joints: { spine: j(6, 0, 0) } },
+    { ...p("stand", 0.7, 0.18, -16), joints: { spine: j(6, 0, 0) } },
+  ]),
+  adult("trio-standing-centre", "Standing Centre with Kneeling Pair", "Upright central figure and kneeling companions on either side", [
+    { ...p("stand", 0, 0.18, 0), joints: { upperArmL: j(-30, 0, 40), upperArmR: j(-30, 0, -40) } },
+    { ...p("kneel", -0.65, -0.3, 22), joints: { spine: j(12, 0, 0) } },
+    { ...p("kneel", 0.65, -0.3, -22), joints: { spine: j(12, 0, 0) } },
+  ]),
+  adult("trio-seated-row", "Seated Trio Inward", "Three seated figures angled inward", [
+    { ...p("sit", -0.83, 0, 18), joints: { upperArmR: j(-42, 0, -22) } },
+    { ...p("sit", 0, -0.12, 0), joints: { spine: j(-8, 0, 0) } },
+    { ...p("sit", 0.83, 0, -18), joints: { upperArmL: j(-42, 0, 22) } },
+  ]),
+  adult("trio-recline-row", "Reclining Trio", "Three reclining figures at staggered angles", [
+    { ...p("lie-up", -0.88, -0.13, -15), joints: { thighL: j(-25, 0, 14) } },
+    { ...p("lie-up", 0, 0.15, 0), joints: { thighR: j(-35, 0, -12) } },
+    { ...p("lie-up", 0.88, -0.13, 15), joints: { upperArmL: j(-44, 0, 26) } },
+  ]),
+  adult("trio-rear-pair", "Standing Rear Pair with Seated Front", "A seated figure in front of a standing pair", [
+    { ...p("sit", 0, -0.65, 0), joints: { spine: j(10, 0, 0) } },
+    { ...p("stand", -0.55, 0.2, 20), joints: { upperArmR: j(-40, 0, -28) } },
+    { ...p("stand", 0.55, 0.2, -20), joints: { upperArmL: j(-40, 0, 28) } },
+  ]),
+  adult("trio-mixed-recline", "Two Reclining with Kneeling Centre", "Two reclining figures flanking a central kneeling figure", [
+    { ...p("lie-up", -0.88, 0, 0), joints: { thighL: j(-25, 0, 8) } },
+    { ...p("kneel", 0, -0.16, 0), joints: { spine: j(8, 0, 0), upperArmL: j(-42, 0, 22) } },
+    { ...p("lie-up", 0.88, 0, 0), joints: { thighR: j(-25, 0, -8) } },
+  ]),
+  adult("trio-kneeling-circle", "Kneeling Triangle", "Three kneeling figures facing a centre point", [
+    { ...p("kneel", -0.58, -0.35, 60), joints: { spine: j(-8, 0, 0) } },
+    { ...p("kneel", 0.58, -0.35, -60), joints: { spine: j(-8, 0, 0) } },
+    { ...p("kneel", 0, 0.65, 180), joints: { spine: j(-8, 0, 0) } },
+  ]),
+  adult("trio-one-standing-two-seated", "Standing with Two Seated", "One standing figure behind a pair seated at different angles", [
+    { ...p("sit", -0.43, -0.31, 13), joints: { upperArmR: j(-35, 0, -25) } },
+    { ...p("sit", 0.43, -0.31, -13), joints: { upperArmL: j(-35, 0, 25) } },
+    { ...p("stand", 0, 0.63, 0), joints: { spine: j(10, 0, 0) } },
+  ]),
+  adult("trio-one-seated-two-kneeling", "Seated with Two Kneeling", "Central seated figure with two nearby kneeling figures", [
+    { ...p("kneel", -0.7, 0, 20), joints: { upperArmR: j(-55, 0, -25) } },
+    { ...p("sit", 0, -0.15, 0), joints: { head: j(-10, 0, 0) } },
+    { ...p("kneel", 0.7, 0, -20), joints: { upperArmL: j(-55, 0, 25) } },
+  ]),
+  adult("trio-back-to-back", "Back-to-Back Trio", "Three upright figures oriented outward", [
+    { ...p("stand", -0.4, -0.2, -60), joints: { upperArmL: j(-30, 0, 22) } },
+    { ...p("stand", 0.4, -0.2, 60), joints: { upperArmR: j(-30, 0, -22) } },
+    { ...p("stand", 0, 0.49, 180), joints: { upperArmL: j(-20, 0, 18), upperArmR: j(-20, 0, -18) } },
+  ]),
+  adult("trio-front-kneeling", "Two Standing One Forward Kneeling", "One kneeling figure ahead of two standing figures", [
+    { ...p("kneel", 0, -0.8, 0), joints: { spine: j(16, 0, 0) } },
+    { ...p("stand", -0.5, 0.18, 20), joints: { upperArmL: j(-25, 0, 15) } },
+    { ...p("stand", 0.5, 0.18, -20), joints: { upperArmR: j(-25, 0, -15) } },
+  ]),
+  adult("trio-side-reclines", "Three Side Reclines", "Three separated side-lying figures angled toward one another", [
+    { ...p("lie-left", -0.86, 0, 18), joints: { upperArmR: j(-32, 0, -28) } },
+    { ...p("lie-right", 0, 0.1, 0), joints: { thighL: j(-65, 0, 0) } },
+    { ...p("lie-left", 0.86, 0, -18), joints: { upperArmL: j(-32, 0, -28) } },
+  ]),
+  adult("trio-sitting-kneeling-standing", "Standing Seated Kneeling Trio", "Three distinct heights facing the same direction", [
+    { ...p("stand", -0.76, 0, 4), joints: { upperArmL: j(-34, 0, 20) } },
+    { ...p("sit", 0, -0.2, 0), joints: { upperArmR: j(-40, 0, -26) } },
+    { ...p("kneel", 0.76, 0, -4), joints: { spine: j(10, 0, 0) } },
   ]),
 ];
 
@@ -230,25 +366,32 @@ export function applySoloAdultPreset(project: Project, preset: GroupPreset, sele
 }
 
 export function applyGroupPreset(project: Project, preset: GroupPreset): void {
-  // Keep extra characters already in the project; the user controls deleting them.
+  if (preset.members.length !== preset.count || preset.count < 2) return;
+
+  // Adult arrangements are complete scenes, not incremental edits to whichever
+  // combination of characters was on screen before. Undo still restores extras.
+  if (preset.category === "adult") project.characters.splice(preset.count);
   while (project.characters.length < preset.count) {
     project.characters.push(createCharacter({ name: nextCharacterName(project) }));
   }
   const existing = project.characters.slice(0, preset.count);
-  const originX = existing.reduce((s, c) => s + c.position.x, 0) / existing.length;
-  const originZ = existing.reduce((s, c) => s + c.position.z, 0) / existing.length;
+  // An old group may have been moved around manually. Never inherit that drift
+  // when loading a named, predefined adult scene.
+  const originX = preset.category === "adult" ? 0 : existing.reduce((s, c) => s + c.position.x, 0) / existing.length;
+  const originZ = preset.category === "adult" ? 0 : existing.reduce((s, c) => s + c.position.z, 0) / existing.length;
   preset.members.forEach((member, i) => {
     const character = project.characters[i]!;
     character.position = { x: originX + member.x, y: 0, z: originZ + member.z };
     character.rotation = { x: 0, y: member.yaw, z: 0 };
-    applyPreset(character, member.pose, true);
+    // Apply the base first, then its actual overrides and only then measure the
+    // *rendered body surface*. Using lowestJointDelta misplaces feet, limbs and
+    // leaning/reclining bodies because joint centres are not mesh boundaries.
+    applyPreset(character, member.pose, false);
     if (member.joints) {
       character.pose = character.jointLimits
         ? clampPose({ ...character.pose, ...member.joints }, true)
         : { ...character.pose, ...member.joints };
-      const points = Object.values(worldJoints(character.pose, character.position, character.rotation, character.scale));
-      character.position.y += lowestJointDelta(points);
     }
-    character.position.y += member.lift ?? 0;
+    placeBodyOnFloor(character, member.lift ?? 0);
   });
 }
