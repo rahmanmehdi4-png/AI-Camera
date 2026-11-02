@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it, test } from "node:test";
 import * as THREE from "three";
 import { elevationDeg, focalLengthMm, shotSize } from "./camera.ts";
 import { classifyPose, supportFor } from "./detect.ts";
