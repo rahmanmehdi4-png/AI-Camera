@@ -56,7 +56,8 @@ import {
   toSceneProp,
 } from "@/planner/project";
 import { PROP_LIBRARY, type PropKind } from "@/planner/props";
-import { ADULT_GROUP_PRESETS, SOLO_ADULT_PRESETS, GROUP_PRESETS, applySoloAdultPreset } from "@/planner/group-presets";
+import { ADULT_GROUP_PRESETS, SOLO_ADULT_PRESETS, GROUP_PRESETS, applySoloAdultPreset, type GroupPreset } from "@/planner/group-presets";
+import { PresetScenePreview } from "./PresetScenePreview";
 import { deleteStoredProject, listProjects, loadLastProject, saveProject, type StoredProject } from "@/planner/storage";
 import { JOINT_GROUPS, JOINT_LABEL, PRESET_LABEL, type JointId, type PresetId } from "@/planner/skeleton";
 import { blobBytes, buildZip, downloadBlob } from "@/planner/zip";
@@ -104,6 +105,7 @@ export function PlannerApp() {
   const [poseSearch, setPoseSearch] = useState("");
   const [poseCount, setPoseCount] = useState(2);
   const [showAdultPresets, setShowAdultPresets] = useState(false);
+  const [previewPreset, setPreviewPreset] = useState<GroupPreset | null>(null);
   const [customLayouts, setCustomLayouts] = useState<{name:string; members:ReturnType<typeof usePlanner.getState>["project"]["characters"]}[]>(() => {
     try { return JSON.parse(localStorage.getItem("camera-planner:v2:custom-poses") || "[]"); } catch { return []; }
   });
@@ -356,7 +358,7 @@ export function PlannerApp() {
       }}>×</button></div>)}</div></details> : null}
       <div className="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto">
         {GROUP_PRESETS.filter((preset) => preset.count === poseCount && preset.name.toLowerCase().includes(poseSearch.toLowerCase())).map((preset) => (
-          <button key={preset.id} type="button" className="btn h-auto flex-col items-start text-left" title={preset.description} onClick={() => { store.applyGroup(preset); store.setControlMode("character"); window.requestAnimationFrame(() => viewRef.current?.frameAll()); }}><span className="text-xs font-semibold">{preset.name}</span><span className="text-[11px] text-muted">{preset.description}</span></button>
+          <button key={preset.id} type="button" className="btn h-auto flex-col items-start text-left" title={preset.description} onClick={() => setPreviewPreset(preset)}><span className="text-xs font-semibold">{preset.name}</span><span className="text-[11px] text-muted">{preset.description}</span></button>
         ))}
       </div>
       <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs text-muted">
@@ -371,7 +373,7 @@ export function PlannerApp() {
           ) : (
             <div className="grid max-h-60 grid-cols-2 gap-2 overflow-y-auto">
               {ADULT_GROUP_PRESETS.filter((preset) => preset.count === poseCount && preset.name.toLowerCase().includes(poseSearch.toLowerCase())).map((preset) => (
-                <button key={preset.id} type="button" className="btn h-auto flex-col items-start text-left" title={preset.description} onClick={() => { store.applyGroup(preset); store.setControlMode("character"); }}>
+                <button key={preset.id} type="button" className="btn h-auto flex-col items-start text-left" title={preset.description} onClick={() => setPreviewPreset(preset)}>
                   <span className="text-xs font-semibold">{preset.name}</span>
                   <span className="text-[11px] text-muted">{preset.description}</span>
                 </button>
@@ -383,11 +385,7 @@ export function PlannerApp() {
             <p className="mb-2 text-xs text-muted">Clearly labelled JOI mannequin references; non-graphic and fully editable. Only the selected character changes.</p>
             <div className="grid max-h-56 grid-cols-2 gap-2 overflow-y-auto">
               {SOLO_ADULT_PRESETS.filter((preset) => preset.name.toLowerCase().includes(poseSearch.toLowerCase())).map((preset) => (
-                <button key={preset.id} type="button" className="btn h-auto flex-col items-start text-left" title={preset.description} onClick={() => {
-                  if (!selectedCharacter) return;
-                  store.commit((draft) => applySoloAdultPreset(draft, preset, selectedCharacter.id));
-                  store.setControlMode("character");
-                }}>
+                <button key={preset.id} type="button" className="btn h-auto flex-col items-start text-left" title={preset.description} onClick={() => setPreviewPreset(preset)}>
                   <span className="text-xs font-semibold">{preset.name}</span>
                   <span className="text-[11px] text-muted">{preset.description}</span>
                 </button>
@@ -665,6 +663,28 @@ export function PlannerApp() {
           {mobile === "export" ? exporter : null}
         </div>
       ) : null}
+      {previewPreset ? <div role="dialog" aria-modal="true" aria-label={`Preview ${previewPreset.name}`}
+        className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-3">
+        <div className="w-[min(26rem,96vw)] max-h-[90dvh] overflow-y-auto rounded-2xl border border-border bg-surface p-4 shadow-2xl">
+          <h2 className="text-base font-semibold">{previewPreset.name}</h2>
+          <p className="my-2 text-xs text-muted">{previewPreset.description}</p>
+          <PresetScenePreview preset={previewPreset} />
+          <p className="my-2 text-xs text-muted">This renders the actual mannequin geometry before applying the arrangement. Your current scene remains unchanged until you select Apply.</p>
+          <div className="flex gap-2">
+            <button className="btn flex-1" type="button" onClick={()=>setPreviewPreset(null)}>Cancel</button>
+            <button className="btn btn-primary flex-1" type="button" onClick={() => {
+              const preset=previewPreset;
+              if(preset.count===1){
+                if(!selectedCharacter) {store.setStatus("Select a character first");setPreviewPreset(null);return;}
+                store.commit(draft=>applySoloAdultPreset(draft,preset,selectedCharacter.id));
+              } else {store.applyGroup(preset);}
+              store.setControlMode("character");
+              setPreviewPreset(null);
+              window.requestAnimationFrame(()=>viewRef.current?.frameAll());
+            }}>Apply arrangement</button>
+          </div>
+        </div>
+      </div> : null}
       <nav className="grid grid-cols-5 border-t border-border bg-surface 2xl:hidden">
         {(
           [
