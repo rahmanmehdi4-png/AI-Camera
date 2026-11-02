@@ -905,7 +905,7 @@ function CharacterPanel({
           {(["x", "y", "z"] as const).map((axis) => (
             <label className="mb-3 flex flex-col gap-1" key={axis}>
               <span className="flex justify-between text-xs"><span>{axis==="x"?"Bend forwards / backwards":axis==="y"?"Turn / twist":"Move sideways"}</span><span className="font-mono">{Math.round(character.pose[store.joint as JointId][axis])}°</span></span>
-              <input className="w-full accent-primary" type="range" min={-180} max={180} step={2} aria-label={`${JOINT_LABEL[store.joint]} ${axis} rotation`}
+              <input className="w-full accent-primary" type="range" min={-180} max={180} step={2} aria-label={`${JOINT_LABEL[store.joint!]} ${axis} rotation`}
                 value={Math.min(180,Math.max(-180,character.pose[store.joint as JointId][axis]))}
                 onPointerDown={() => store.begin()} onPointerUp={() => store.end()} onPointerCancel={() => store.end()}
                 onChange={event => store.setJointEuler(character.id,store.joint!,{...character.pose[store.joint as JointId],[axis]:Number(event.target.value)},false)} />
