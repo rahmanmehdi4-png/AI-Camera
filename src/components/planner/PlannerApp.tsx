@@ -521,12 +521,12 @@ export function PlannerApp() {
       };
       setControlHelp(button.getAttribute("title") || explanation[label] || `${label}: ${button.getAttribute("aria-label") || "Tap this control to perform the named action."}`);
     }}>
-      <header className="flex items-center gap-2 border-b border-border px-3 py-2">
+      <header className="flex flex-wrap items-center gap-2 border-b border-border px-2 py-2 sm:px-3">
         <div className="hidden size-8 items-center justify-center rounded-lg bg-primary text-primary-fg sm:flex">
           <Camera className="size-4" />
         </div>
         <span className="shrink-0 rounded-md border border-accent/50 bg-accent/10 px-2 py-1 text-[10px] font-semibold tracking-wider text-accent" aria-label="Application version 2.1">V2.1</span>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-[9rem] flex-[1_1_12rem]">
           <input
             className="field font-medium"
             aria-label="Project name"
@@ -537,11 +537,13 @@ export function PlannerApp() {
           />
         </div>
         <button className="btn !min-h-9" type="button" data-help-toggle="true" data-on={helpMode}
-          aria-pressed={helpMode} title="Help Mode: tap any button to learn what it does" onClick={() => {setHelpMode(v=>!v);setControlHelp(null);}}>
+          aria-label={helpMode?"Exit Help Mode":"Help mode"} aria-pressed={helpMode} title="Help Mode: tap any button to learn what it does" onClick={() => {setHelpMode(v=>!v);setControlHelp(null);}}>
           <CircleHelp className="size-4" /> <span className="hidden sm:inline">{helpMode?"Exit help":"Help mode"}</span>
         </button>
-        <button className="btn !min-h-9" type="button" data-help-toggle="true" title="Temporarily hide the extra editing toolbars" onClick={()=>{setChromeHidden(v=>!v);setMobile(null);}}>
-          {chromeHidden?"Show tools":"Hide tools"}
+        <button className="btn !min-h-9" type="button" data-help-toggle="true"
+          aria-label={chromeHidden?"Show toolbars":"Hide toolbars"}
+          title="Temporarily hide the extra editing toolbars" onClick={()=>{setChromeHidden(v=>!v);setMobile(null);}}>
+          <Settings2 className="size-4" /><span className="hidden sm:inline">{chromeHidden?"Show tools":"Hide tools"}</span>
         </button>
         <button className="btn btn-ghost" type="button" aria-label="Undo" onClick={() => store.undo()}>
           <Undo2 className="size-4" />
@@ -592,7 +594,7 @@ export function PlannerApp() {
               </div>
             </div>
           </div>
-          <div className={`pointer-events-none absolute bottom-3 left-3 flex-wrap gap-2 ${chromeHidden?"hidden":"flex"}`}>
+          <div className={`pointer-events-none absolute bottom-3 left-3 flex-wrap gap-2 ${(chromeHidden||mobile!==null)?"hidden":"flex"}`}>
             <div className="pointer-events-auto flex gap-1 rounded-xl border border-border bg-surface p-1">
               {TOOLS.map((tool) => (
                 <button key={tool.id} className="btn" data-on={store.tool === tool.id} type="button" onClick={() => store.setTool(tool.id)} aria-label={tool.label} title={`Tool: ${tool.label}`}>
@@ -705,7 +707,14 @@ export function PlannerApp() {
             className="btn btn-ghost rounded-none border-0"
             data-on={mobile === id}
             type="button"
-            onClick={() => setMobile((current) => (current === id ? null : id))}
+            onClick={() => {
+              if(id==="camera") {
+                activateMode("camera");
+                if(store.view==="scene") store.setView("camera");
+              } else if(id==="pose") activateMode("character");
+              else if(id==="time") store.setControlMode("path");
+              setMobile(current => current===id?null:id);
+            }}
           >
             <Icon className="size-4" /> {label}
           </button>
