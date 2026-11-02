@@ -437,7 +437,9 @@ export class Stage {
     }
     for (; arrow < this.arrows.length; arrow++) this.arrows[arrow]!.visible = false;
     // Preallocate and reuse handles; never create/dispose geometry every animation frame.
-    const activePath = project.motions.find((clip) => clip.kind === "path" && clip.waypoints?.length);
+    const activeId = this.hooks.getActiveWaypoint()?.clipId;
+    const activePath = project.motions.find((clip) => clip.id === activeId && clip.kind === "path" && clip.waypoints?.length) ??
+      project.motions.find((clip) => clip.kind === "path" && clip.waypoints?.length);
     const waypoints = activePath?.waypoints ?? [];
     waypoints.forEach((point, index) => {
       let marker = this.waypointMeshes[index];
@@ -671,8 +673,8 @@ export class Stage {
       const centreX = (a.x+b.x)/2, centreY = (a.y+b.y)/2;
       const shot = this.locate({clientX:centreX,clientY:centreY} as PointerEvent)?.view === "shot" && this.hooks.getControlMode() === "camera";
       this.pinch = { distance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), x: centreX, y: centreY, shot };
-      if (shot) this.hooks.begin();
       if (this.drag) this.hooks.end();
+      if (shot) this.hooks.begin();
       this.drag = null;
       return;
     }
@@ -731,7 +733,8 @@ export class Stage {
       return;
     }
     // Touch-friendly selection uses projected joint centres rather than tiny mesh pixels.
-    const nearJoint = mode === "character" && this.hooks.getTool() === "pose"
+    const directLimbHit = hits.find(hit => pickOf(hit) === "character" && hit.object.userData.joint);
+    const nearJoint = mode === "character" && this.hooks.getTool() === "pose" && !directLimbHit
       ? this.nearestJoint(event, project) : null;
     if (nearJoint) {
       this.hooks.select({ type: "character", id: nearJoint.id });
