@@ -48,6 +48,7 @@ assert.ok(!existsSync(path('__grok')),'Preview-template assets leaked into the r
 console.log('V2 package verified: '+files.length+' web assets; manifest, cache, icons and referenced files OK.');
 
 const release=JSON.parse(read('release.json'));
+assert.equal(release.version,JSON.parse(readFileSync('package.json','utf8')).version,'Release manifest version must match package.json');
 assert.equal(release.renderer,'sculpted-2.1');
 assert.equal(release.entry,'src/main-v2.tsx');
 assert.ok(release.node.startsWith('v22.'),'Production release must use Node 22');
